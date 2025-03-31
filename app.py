@@ -7,15 +7,14 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.history_aware_retriever import \
     create_history_aware_retriever
 from langchain.chains.retrieval import create_retrieval_chain
-from langchain_community.embeddings import (HuggingFaceInstructEmbeddings,
-                                  OpenAIEmbeddings)
-from langchain_community.llms import HuggingFaceHub
 from langchain.memory import ConversationBufferMemory
 from langchain.text_splitter import CharacterTextSplitter
+from langchain_community.embeddings import HuggingFaceInstructEmbeddings
+from langchain_community.llms import HuggingFaceHub
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import Runnable
-from langchain_openai import ChatOpenAI
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from PyPDF2 import PdfReader
 
 from htmlTemplates import bot_template, css, user_template
