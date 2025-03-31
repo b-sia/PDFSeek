@@ -7,12 +7,12 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.history_aware_retriever import \
     create_history_aware_retriever
 from langchain.chains.retrieval import create_retrieval_chain
-from langchain.embeddings import (HuggingFaceInstructEmbeddings,
+from langchain_community.embeddings import (HuggingFaceInstructEmbeddings,
                                   OpenAIEmbeddings)
-from langchain.llms import HuggingFaceHub
+from langchain_community.llms import HuggingFaceHub
 from langchain.memory import ConversationBufferMemory
 from langchain.text_splitter import CharacterTextSplitter
-from langchain.vectorstores import FAISS
+from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import Runnable
 from langchain_openai import ChatOpenAI
@@ -84,7 +84,7 @@ def handle_userinput(user_question: str) -> None:
     Returns:
         None
     """
-    response = st.session_state.conversation({"question": user_question})
+    response = st.session_state.conversation({"input": user_question})
     st.session_state.chat_history = response['chat_history']
 
     for i, message in enumerate(st.session_state.chat_history):
@@ -189,6 +189,7 @@ def main():
                 vectorstore = get_vectorstore(text_chunks)
 
                 # create conversation chain
+                # takes the history of the conversation and returns the next element of the conversation
                 st.session_state.conversation = get_conversation_chain(
                     vectorstore)
 
