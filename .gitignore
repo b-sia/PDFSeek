@@ -1,0 +1,24 @@
+# DLLs / cached files
+__pycache__/
+*.py[cod]/
+*$py.class
+
+# C extensions
+*.so
+
+# virtual environments
+venv*/
+
+# Distributed / packaging files
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+
+# environment files
+.env
+
+# misc scripts
+activate_env.sh
