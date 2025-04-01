@@ -9,11 +9,31 @@ import streamlit as st
 from pydantic import BaseModel
 from typing import Any, Dict, List
 
+from langchain_community.llms import LlamaCpp
+from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+
 class ChatState(BaseModel):
     input: str
     chat_history: List[Any] = []
     retrieved_docs: List[Dict[str, Any]] = []
     response: str = None
+
+
+def get_llm():
+    """Initialize the appropriate LLM based on user selection."""
+    if st.session_state.get("model_type", "OpenAI GPT-3.5") == "OpenAI GPT-3.5":
+        return ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo")
+    else:
+        return LlamaCpp(
+            model_path=st.session_state.local_model_path,
+            max_tokens=st.session_state.max_local_tokens,
+            temperature=0.1,
+            top_p=0.95,
+            repeat_penalty=1.2,
+            n_ctx=2048,
+            callbacks=[StreamingStdOutCallbackHandler()],
+            verbose=False
+        )
 
 
 def handle_userinput(user_question: str) -> None:
@@ -56,8 +76,9 @@ def build_conversation_graph(vectorstore) -> StateGraph:
         return {"retrieved_docs": docs}
 
     def generate_response(state: ChatState):
-        llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo")
+        llm = get_llm()  # Use the selected LLM
         context = [doc.page_content for doc in state.retrieved_docs]
+        
         qa_chain = create_retrieval_chain(
             retriever=vectorstore.as_retriever(),
             combine_docs_chain=create_stuff_documents_chain(
@@ -67,11 +88,13 @@ def build_conversation_graph(vectorstore) -> StateGraph:
                 )
             )
         )
+        
         response = qa_chain.invoke({
             "input": state.input,
             "chat_history": state.chat_history,
             "context": context
         })
+        
         st.session_state.message_history.add_ai_message(response["answer"])
         return {"response": response["answer"], "chat_history": st.session_state.message_history.messages}
 

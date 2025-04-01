@@ -6,11 +6,29 @@ from modules.pdf_processing import process_uploaded_pdfs
 from modules.conversation import handle_userinput
 from modules.templates import css
 
+
 def render_sidebar():
-    """Render the sidebar for uploading and processing PDFs."""
-    st.subheader("Documents")
+    """Render the sidebar for model selection and PDF processing."""
+    st.subheader("Model Configuration")
+    model_type = st.selectbox(
+        "Choose Model Type",
+        ["OpenAI GPT-3.5", "Local LLM"],
+        key="model_type"
+    )
+    
+    if model_type == "Local LLM":
+        st.session_state.local_model_path = st.text_input(
+            "Local Model Path (e.g., ./models/llama-2-7b.Q4_K_M.gguf)",
+            key="local_model_path"
+        )
+        st.session_state.max_local_tokens = st.number_input(
+            "Max Tokens", 100, 4096, 512, key="max_local_tokens"
+        )
+    
+    st.subheader("Document Processing")
     pdf_docs = st.file_uploader(
-        "Upload your PDFs here and click on 'Process'", accept_multiple_files=True
+        "Upload PDFs and click 'Process'", 
+        accept_multiple_files=True
     )
     if st.button("Process"):
         process_uploaded_pdfs(pdf_docs)
