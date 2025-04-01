@@ -36,6 +36,10 @@ def get_vectorstore(text_chunks: List[str]) -> FAISS:
 def process_uploaded_pdfs(pdf_docs):
     """Process uploaded PDF documents."""
     with st.spinner("Processing"):
+        # Clear existing conversation but keep history
+        if "conversation" in st.session_state:
+            del st.session_state.conversation
+            
         raw_text = get_pdf_text(pdf_docs)
         text_chunks = get_text_chunks(raw_text)
         vectorstore = get_vectorstore(text_chunks)

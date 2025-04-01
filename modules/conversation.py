@@ -18,23 +18,27 @@ class ChatState(BaseModel):
 
 def handle_userinput(user_question: str) -> None:
     """Handle user input and update the conversation."""
-    if "message_history" not in st.session_state:
-        st.session_state.message_history = ChatMessageHistory()
+    # Create a container for chat messages
+    chat_container = st.container()
     
+    # Process the question
     initial_state = ChatState(
         input=user_question,
         chat_history=st.session_state.message_history.messages
     )
     
-    # Execute the conversation graph
-    result = st.session_state.conversation.invoke(initial_state)
-    
-    # Update displayed messages
-    for message in st.session_state.message_history.messages[-2:]:
-        if isinstance(message, HumanMessage):
-            st.write(user_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
-        else:
-            st.write(bot_template.replace("{{MSG}}", message.content), unsafe_allow_html=True)
+    if st.session_state.conversation:
+        result = st.session_state.conversation.invoke(initial_state)
+        
+        # Display full history in the container
+        with chat_container:
+            for message in st.session_state.message_history.messages:
+                if isinstance(message, HumanMessage):
+                    st.write(user_template.replace("{{MSG}}", message.content), 
+                           unsafe_allow_html=True)
+                else:
+                    st.write(bot_template.replace("{{MSG}}", message.content), 
+                           unsafe_allow_html=True)
 
 
 def build_conversation_graph(vectorstore) -> StateGraph:
