@@ -54,27 +54,29 @@ def render_sidebar():
             key="max_local_tokens_input",
             help="Maximum number of tokens to generate. If set to -1 or None, max number of tokens depend on n_ctx."
         )
-        st.session_state.temperature = st.number_input(
-            "Temperature", min_value=0.0, max_value=1.0, value=0.1, step=0.01, key="temperature_input",
-            help="Controls the randomness of the output. Lower values make the output more deterministic. Higher value makes the output more creative and unpredictable."
-        )
-        st.session_state.top_p = st.number_input(
-            "Top P", min_value=0.0, max_value=1.0, value=0.95, step=0.01, key="top_p_input",
-            help="Value used for nucleus sampling, as described in The Curious Case of Neural Text Degeneration."
-        )
-        st.session_state.repeat_penalty = st.number_input(
-            "Repeat Penalty", min_value=0.0, max_value=2.0, value=1.2, step=0.1, key="repeat_penalty_input",
-            help="Penalty for repeating tokens in the output. Higher values discourage repetition."
-        )
-        st.session_state.n_ctx = st.number_input(
-            "Context Length (n_ctx)", min_value=1, max_value=4096, value=4096, step=1, key="n_ctx_input",
-            help="Context length for the model. This is the maximum number of tokens the model can process at once."
-        )
-        st.session_state.gpu_layers = st.number_input(
-            "GPU Layers", -1, 100, -1 if is_available() else 0,
-            key="gpu_layers_input",
-            help="Number of layers to offload to GPU. Set to 0 for CPU-only inference, or -1 to offload all layers to GPU."
-        )
+        
+        with st.expander("Advanced Model Configuration"):
+            st.session_state.temperature = st.number_input(
+                "Temperature", min_value=0.0, max_value=1.0, value=0.1, step=0.01, key="temperature_input",
+                help="Controls the randomness of the output. Lower values make the output more deterministic. Higher value makes the output more creative and unpredictable."
+            )
+            st.session_state.top_p = st.number_input(
+                "Top P", min_value=0.0, max_value=1.0, value=0.95, step=0.01, key="top_p_input",
+                help="Value used for nucleus sampling, as described in The Curious Case of Neural Text Degeneration."
+            )
+            st.session_state.repeat_penalty = st.number_input(
+                "Repeat Penalty", min_value=0.0, max_value=2.0, value=1.2, step=0.1, key="repeat_penalty_input",
+                help="Penalty for repeating tokens in the output. Higher values discourage repetition."
+            )
+            st.session_state.n_ctx = st.number_input(
+                "Context Length (n_ctx)", min_value=1, max_value=4096, value=4096, step=1, key="n_ctx_input",
+                help="Context length for the model. This is the maximum number of tokens the model can process at once."
+            )
+            st.session_state.gpu_layers = st.number_input(
+                "GPU Layers", -1, 100, -1 if is_available() else 0,
+                key="gpu_layers_input",
+                help="Number of layers to offload to GPU. Set to 0 for CPU-only inference, or -1 to offload all layers to GPU."
+            )
     
     st.subheader("Document Processing")
     pdf_docs = st.file_uploader(
