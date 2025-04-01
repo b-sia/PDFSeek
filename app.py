@@ -46,18 +46,26 @@ def render_sidebar():
         if "local_model_path" in st.session_state:
             st.code(f"Loaded model: {st.session_state.local_model_path}")
         
-        # Model configuration
-        col1, col2 = st.columns(2)
-        with col1:
-            st.session_state.max_local_tokens = st.number_input(
-                "Max Tokens", 100, 4096, 512,
-                key="max_local_tokens_input"
-            )
-        with col2:
-            st.session_state.gpu_layers = st.number_input(
-                "GPU Layers", 0, 100, 0,
-                key="gpu_layers_input"
-            )
+        st.session_state.max_local_tokens = st.number_input(
+            "Max Tokens", 100, 4096, 512,
+            key="max_local_tokens_input"
+        )
+        st.session_state.temperature = st.number_input(
+            "Temperature", min_value=0.0, max_value=1.0, value=0.1, step=0.01, key="temperature_input"
+        )
+        st.session_state.top_p = st.number_input(
+            "Top P", min_value=0.0, max_value=1.0, value=0.95, step=0.01, key="top_p_input"
+        )
+        st.session_state.repeat_penalty = st.number_input(
+            "Repeat Penalty", min_value=0.0, max_value=2.0, value=1.2, step=0.1, key="repeat_penalty_input"
+        )
+        st.session_state.n_ctx = st.number_input(
+            "Context Length (n_ctx)", min_value=1, max_value=4096, value=4096, step=1, key="n_ctx_input"
+        )
+        st.session_state.gpu_layers = st.number_input(
+            "GPU Layers", 0, 100, 0,
+            key="gpu_layers_input"
+        )
     
     st.subheader("Document Processing")
     pdf_docs = st.file_uploader(
