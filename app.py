@@ -57,11 +57,10 @@ def handle_userinput(user_question: str) -> None:
     if "message_history" not in st.session_state:
         st.session_state.message_history = ChatMessageHistory()
     
-    # Create initial state
-    initial_state = {
-        "input": user_question,
-        "chat_history": st.session_state.message_history.messages
-    }
+    initial_state = ChatState(
+        input=user_question,
+        chat_history=st.session_state.message_history.messages
+    )
     
     # Execute the conversation graph
     result = st.session_state.conversation.invoke(initial_state)
