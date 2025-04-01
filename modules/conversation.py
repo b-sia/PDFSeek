@@ -30,10 +30,10 @@ def get_llm():
         return LlamaCpp(
             model_path=st.session_state.local_model_path,
             max_tokens=st.session_state.get("max_local_tokens_input", 512),
-            temperature=0.1,
-            top_p=0.95,
-            repeat_penalty=1.2,
-            n_ctx=2048,
+            temperature=st.session_state.get("temperature_input", 0.1),
+            top_p=st.session_state.get("top_p_input", 0.95),
+            repeat_penalty=st.session_state.get("repeat_penalty_input", 1.2),
+            n_ctx=st.session_state.get("n_ctx_input", 4096),
             callbacks=[StreamingStdOutCallbackHandler()],
             verbose=False
         )
