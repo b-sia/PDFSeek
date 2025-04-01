@@ -1,5 +1,5 @@
 import os
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -8,13 +8,12 @@ from langchain.chains.retrieval import create_retrieval_chain
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_community.vectorstores import FAISS
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from PyPDF2 import PdfReader
-from langgraph.graph import StateGraph, END
+from langgraph.graph import END, StateGraph
 from pydantic import BaseModel
-from langchain_core.messages import BaseMessage
+from PyPDF2 import PdfReader
 
 from htmlTemplates import bot_template, css, user_template
 
