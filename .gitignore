@@ -25,3 +25,6 @@ activate_env.sh
 
 # Model files
 *.safetensors
+
+# debug files
+launch.json
