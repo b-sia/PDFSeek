@@ -2,6 +2,7 @@ import os
 from typing import Any, Dict, List
 
 import streamlit as st
+import torch
 from auto_gptq import AutoGPTQForCausalLM
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.chains.combine_documents import create_stuff_documents_chain
@@ -15,7 +16,7 @@ from pydantic import BaseModel
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 from modules.templates import bot_template, user_template
-import torch
+
 
 class ChatState(BaseModel):
     input: str

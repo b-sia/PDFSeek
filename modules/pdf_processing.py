@@ -1,10 +1,14 @@
 from typing import List
-from PyPDF2 import PdfReader
+
+import streamlit as st
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.vectorstores import FAISS
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_openai import OpenAIEmbeddings
-import streamlit as st
+from PyPDF2 import PdfReader
+
 from modules.conversation import build_conversation_graph
+
 
 def get_pdf_text(pdf_docs: List[str]) -> str:
     """Extract text from uploaded PDF documents."""
@@ -29,7 +33,10 @@ def get_text_chunks(text: str) -> List[str]:
 
 def get_vectorstore(text_chunks: List[str]) -> FAISS:
     """Create a vectorstore from text chunks."""
-    embeddings = OpenAIEmbeddings()
+    if st.session_state.get("model_type_selector") == "Local LLM":
+        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
+    else:
+        embeddings = OpenAIEmbeddings()
     return FAISS.from_texts(text_chunks, embeddings)
 
 
