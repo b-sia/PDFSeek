@@ -22,3 +22,6 @@ eggs/
 
 # misc scripts
 activate_env.sh
+
+# Model files
+*.safetensors
