@@ -127,16 +127,41 @@ def build_conversation_graph(vectorstore: FAISS) -> StateGraph:
     
     return workflow.compile()
 
+
+def initialize_session_state():
+    """Initialize session state variables."""
+    if "conversation" not in st.session_state:
+        st.session_state.conversation = None
+    if "message_history" not in st.session_state:
+        st.session_state.message_history = ChatMessageHistory()
+
+
+def render_sidebar():
+    """Render the sidebar for uploading and processing PDFs."""
+    st.subheader("Documents")
+    pdf_docs = st.file_uploader(
+        "Upload your PDFs here and click on 'Process'", accept_multiple_files=True
+    )
+    if st.button("Process"):
+        process_uploaded_pdfs(pdf_docs)
+
+
+def process_uploaded_pdfs(pdf_docs):
+    """Process uploaded PDF documents."""
+    with st.spinner("Processing"):
+        raw_text = get_pdf_text(pdf_docs)
+        text_chunks = get_text_chunks(raw_text)
+        vectorstore = get_vectorstore(text_chunks)
+        st.session_state.conversation = build_conversation_graph(vectorstore)
+
+
 def main():
     load_dotenv()
     os.environ["OpenAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
     st.set_page_config(page_title="Chat with multiple PDFs", page_icon=":books:")
     st.write(css, unsafe_allow_html=True)
 
-    if "conversation" not in st.session_state:
-        st.session_state.conversation = None
-    if "message_history" not in st.session_state:
-        st.session_state.message_history = ChatMessageHistory()
+    initialize_session_state()
 
     st.header("Chat with multiple PDFs :books:")
     user_question = st.text_input("Ask a question about your documents:")
@@ -145,16 +170,8 @@ def main():
         handle_userinput(user_question)
 
     with st.sidebar:
-        st.subheader("Documents")
-        pdf_docs = st.file_uploader(
-            "Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
-        
-        if st.button("Process"):
-            with st.spinner("Processing"):
-                raw_text = get_pdf_text(pdf_docs)
-                text_chunks = get_text_chunks(raw_text)
-                vectorstore = get_vectorstore(text_chunks)
-                st.session_state.conversation = build_conversation_graph(vectorstore)
+        render_sidebar()
+
 
 if __name__ == '__main__':
     main()
