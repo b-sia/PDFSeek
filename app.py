@@ -14,47 +14,42 @@ def render_sidebar():
     """Render the sidebar for model selection and PDF processing."""
     st.subheader("Model Configuration")
     
+    # Model type selection
     model_type = st.selectbox(
         "Choose Model Type",
         ["OpenAI GPT-3.5", "Local LLM"],
         key="model_type_selector"
     )
     
+    # Local model configuration
     if model_type == "Local LLM":
-        # Create models directory if not exists
-        model_dir = "./models"
-        os.makedirs(model_dir, exist_ok=True)
-        
-        # File upload with chunking support
         uploaded_model = st.file_uploader(
-            "Upload Model File",
+            "Upload GGUF Model File",
             type=["gguf", "safetensors", "bin", "pt"],
-            accept_multiple_files=False,
-            key="model_uploader",
-            help="Supports GGUF, Safetensors, and PyTorch formats"
+            key="model_uploader"
         )
         
         if uploaded_model is not None:
-            # Save with progress bar
+            # Save uploaded model to temporary directory
+            model_dir = "./models"
+            os.makedirs(model_dir, exist_ok=True)
             model_path = os.path.join(model_dir, uploaded_model.name)
-            with st.status(f"Saving {uploaded_model.name}..."):
-                with open(model_path, "wb") as f:
-                    # Write in chunks to handle large files
-                    chunk_size = 1024*1024  # 1MB chunks
-                    for chunk in uploaded_model.iter_bytes(chunk_size):
-                        f.write(chunk)
-                st.session_state.local_model_path = model_path
-                st.rerun()
+            
+            with open(model_path, "wb") as f:
+                f.write(uploaded_model.getbuffer())
+            
+            st.session_state.local_model_path = model_path
+            st.success(f"Model saved to: {model_path}")
         
         if "local_model_path" in st.session_state:
-            st.code(f"Loaded model: {st.session_state.local_model_path}")
+            st.code(f"Using model: {st.session_state.local_model_path}")
         
         st.session_state.max_local_tokens = st.number_input(
             "Max Tokens", 100, 4096, 512,
             key="max_local_tokens_input",
             help="Maximum number of tokens to generate. If set to -1 or None, max number of tokens depend on n_ctx."
         )
-        
+
         with st.expander("Advanced Model Configuration"):
             st.session_state.temperature = st.number_input(
                 "Temperature", min_value=0.0, max_value=1.0, value=0.1, step=0.01, key="temperature_input",
