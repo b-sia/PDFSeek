@@ -32,14 +32,11 @@ def render_sidebar():
         if uploaded_model is not None:
             # Save uploaded model to temporary directory
             model_dir = "./models"
-            os.makedirs(model_dir, exist_ok=True)
-            model_path = os.path.join(model_dir, uploaded_model.name)
-            
-            with open(model_path, "wb") as f:
-                f.write(uploaded_model.getbuffer())
-            
+            model_subdir = os.path.splitext(uploaded_model.name)[0]
+            os.makedirs(os.path.join(model_dir, model_subdir), exist_ok=True)
+            model_path = os.path.join(model_dir, model_subdir, uploaded_model.name)
             st.session_state.local_model_path = model_path
-            st.success(f"Model saved to: {model_path}")
+            st.success(f"{model_path} is loaded successfully.")
         
         if "local_model_path" in st.session_state:
             st.code(f"Using model: {st.session_state.local_model_path}")
