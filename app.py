@@ -11,40 +11,53 @@ def render_sidebar():
     """Render the sidebar for model selection and PDF processing."""
     st.subheader("Model Configuration")
     
-    # Model type selection
     model_type = st.selectbox(
         "Choose Model Type",
         ["OpenAI GPT-3.5", "Local LLM"],
         key="model_type_selector"
     )
     
-    # Local model configuration
     if model_type == "Local LLM":
+        # Create models directory if not exists
+        model_dir = "./models"
+        os.makedirs(model_dir, exist_ok=True)
+        
+        # File upload with chunking support
         uploaded_model = st.file_uploader(
-            "Upload GGUF Model File",
-            type=["gguf"],
-            key="model_uploader"
+            "Upload Model File",
+            type=["gguf", "safetensors", "bin", "pt"],
+            accept_multiple_files=False,
+            key="model_uploader",
+            help="Supports GGUF, Safetensors, and PyTorch formats"
         )
         
         if uploaded_model is not None:
-            # Save uploaded model to temporary directory
-            model_dir = "./models"
-            os.makedirs(model_dir, exist_ok=True)
+            # Save with progress bar
             model_path = os.path.join(model_dir, uploaded_model.name)
-            
-            with open(model_path, "wb") as f:
-                f.write(uploaded_model.getbuffer())
-            
-            st.session_state.local_model_path = model_path
-            st.success(f"Model saved to: {model_path}")
+            with st.status(f"Saving {uploaded_model.name}..."):
+                with open(model_path, "wb") as f:
+                    # Write in chunks to handle large files
+                    chunk_size = 1024*1024  # 1MB chunks
+                    for chunk in uploaded_model.iter_bytes(chunk_size):
+                        f.write(chunk)
+                st.session_state.local_model_path = model_path
+                st.rerun()
         
         if "local_model_path" in st.session_state:
-            st.code(f"Using model: {st.session_state.local_model_path}")
+            st.code(f"Loaded model: {st.session_state.local_model_path}")
         
-        st.session_state.max_local_tokens = st.number_input(
-            "Max Tokens", 100, 4096, 512,
-            key="max_local_tokens_input"
-        )
+        # Model configuration
+        col1, col2 = st.columns(2)
+        with col1:
+            st.session_state.max_local_tokens = st.number_input(
+                "Max Tokens", 100, 4096, 512,
+                key="max_local_tokens_input"
+            )
+        with col2:
+            st.session_state.gpu_layers = st.number_input(
+                "GPU Layers", 0, 100, 0,
+                key="gpu_layers_input"
+            )
     
     st.subheader("Document Processing")
     pdf_docs = st.file_uploader(
