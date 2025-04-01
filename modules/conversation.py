@@ -51,7 +51,7 @@ def get_llm():
             # Load GPTQ model
             model_basename = os.path.basename(model_path).replace(".safetensors", "")
             model = AutoGPTQForCausalLM.from_quantized(
-                model_dir=os.path.dirname(model_path),
+                model_name_or_path=os.path.dirname(model_path),
                 model_basename=model_basename,
                 use_safetensors=True,
                 trust_remote_code=True,
