@@ -84,7 +84,8 @@ def render_sidebar():
 
 def main():
     load_dotenv()
-    os.environ["OpenAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+    if st.session_state.get("model_type_selector") == "OpenAI GPT-3.5":
+        os.environ["OpenAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
     st.set_page_config(page_title="Chat with multiple PDFs", page_icon=":books:")
     st.write(css, unsafe_allow_html=True)
 

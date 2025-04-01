@@ -1,16 +1,18 @@
+from typing import Any, Dict, List
+
+import streamlit as st
+from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.chains.retrieval import create_retrieval_chain
+from langchain_community.llms import LlamaCpp
 from langchain_core.messages import HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains.retrieval import create_retrieval_chain
-from modules.templates import bot_template, user_template
-import streamlit as st
 from pydantic import BaseModel
-from typing import Any, Dict, List
 
-from langchain_community.llms import LlamaCpp
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from modules.templates import bot_template, user_template
+
 
 class ChatState(BaseModel):
     input: str
@@ -30,6 +32,7 @@ def get_llm():
         return LlamaCpp(
             model_path=st.session_state.local_model_path,
             max_tokens=st.session_state.get("max_local_tokens_input", 512),
+            n_gpu_layers=st.session_state.get("gpu_layers_input", -1),
             temperature=st.session_state.get("temperature_input", 0.1),
             top_p=st.session_state.get("top_p_input", 0.95),
             repeat_penalty=st.session_state.get("repeat_penalty_input", 1.2),
