@@ -1,16 +1,21 @@
+import os
+from typing import Any, Dict, List
+
+import streamlit as st
+from auto_gptq import AutoGPTQForCausalLM
+from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.chains.retrieval import create_retrieval_chain
+from langchain_community.llms import LlamaCpp
 from langchain_core.messages import HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains.retrieval import create_retrieval_chain
-from modules.templates import bot_template, user_template
-import streamlit as st
 from pydantic import BaseModel
-from typing import Any, Dict, List
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
-from langchain_community.llms import LlamaCpp
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from modules.templates import bot_template, user_template
+import torch
 
 class ChatState(BaseModel):
     input: str
@@ -27,16 +32,43 @@ def get_llm():
         if "local_model_path" not in st.session_state:
             raise ValueError("Please upload a local model first")
         
-        return LlamaCpp(
-            model_path=st.session_state.local_model_path,
-            max_tokens=st.session_state.get("max_local_tokens_input", 512),
-            temperature=0.1,
-            top_p=0.95,
-            repeat_penalty=1.2,
-            n_ctx=2048,
-            callbacks=[StreamingStdOutCallbackHandler()],
-            verbose=False
-        )
+        model_path = st.session_state.local_model_path
+        file_ext = os.path.splitext(model_path)[1].lower()
+        
+        if file_ext == ".gguf":
+            return LlamaCpp(
+                model_path=model_path,
+                max_tokens=st.session_state.get("max_local_tokens_input", 512),
+                n_gpu_layers=st.session_state.get("gpu_layers_input", 0),
+                temperature=0.1,
+                top_p=0.95,
+                repeat_penalty=1.2,
+                n_ctx=2048,
+                verbose=False
+            )
+        elif file_ext == ".safetensors":
+            # Load GPTQ model
+            model_basename = os.path.basename(model_path).replace(".safetensors", "")
+            model = AutoGPTQForCausalLM.from_quantized(
+                model_dir=os.path.dirname(model_path),
+                model_basename=model_basename,
+                use_safetensors=True,
+                trust_remote_code=True,
+                device="cuda:0" if torch.cuda.is_available() else "cpu",
+                use_triton=False,
+                quantize_config=None
+            )
+            tokenizer = AutoTokenizer.from_pretrained(
+                os.path.dirname(model_path)
+            )
+            return pipeline(
+                "text-generation",
+                model=model,
+                tokenizer=tokenizer,
+                max_new_tokens=st.session_state.get("max_local_tokens_input", 512)
+            )
+        else:
+            raise ValueError(f"Unsupported file format: {file_ext}")
 
 
 def handle_userinput(user_question: str) -> None:
