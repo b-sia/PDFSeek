@@ -10,19 +10,31 @@ from modules.templates import css
 def render_sidebar():
     """Render the sidebar for model selection and PDF processing."""
     st.subheader("Model Configuration")
+    
+    # Initialize session state keys if they don't exist
+    if "model_type" not in st.session_state:
+        st.session_state.model_type = "OpenAI GPT-3.5"
+    if "local_model_path" not in st.session_state:
+        st.session_state.local_model_path = ""
+    if "max_local_tokens" not in st.session_state:
+        st.session_state.max_local_tokens = 512
+    
+    # Model type selection
     model_type = st.selectbox(
         "Choose Model Type",
         ["OpenAI GPT-3.5", "Local LLM"],
-        key="model_type"
+        key="model_type_selector"
     )
     
+    # Local model configuration
     if model_type == "Local LLM":
-        st.session_state.local_model_path = st.text_input(
+        st.text_input(
             "Local Model Path (e.g., ./models/llama-2-7b.Q4_K_M.gguf)",
-            key="local_model_path"
+            key="local_model_path_input"
         )
-        st.session_state.max_local_tokens = st.number_input(
-            "Max Tokens", 100, 4096, 512, key="max_local_tokens"
+        st.number_input(
+            "Max Tokens", 100, 4096, 512,
+            key="max_local_tokens_input"
         )
     
     st.subheader("Document Processing")

@@ -21,12 +21,12 @@ class ChatState(BaseModel):
 
 def get_llm():
     """Initialize the appropriate LLM based on user selection."""
-    if st.session_state.get("model_type", "OpenAI GPT-3.5") == "OpenAI GPT-3.5":
+    if st.session_state.get("model_type_selector", "OpenAI GPT-3.5") == "OpenAI GPT-3.5":
         return ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo")
     else:
         return LlamaCpp(
-            model_path=st.session_state.local_model_path,
-            max_tokens=st.session_state.max_local_tokens,
+            model_path=st.session_state.local_model_path_input,
+            max_tokens=st.session_state.max_local_tokens_input,
             temperature=0.1,
             top_p=0.95,
             repeat_penalty=1.2,
