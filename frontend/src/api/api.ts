@@ -14,13 +14,25 @@ export const uploadPDFs = async (files: File[]): Promise<PDFMetadata[]> => {
   const formData = new FormData();
   files.forEach(file => formData.append('files', file));
   
-  const response = await api.post('/api/pdf/upload', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-  
-  return response.data.document_ids;
+  try {
+    const response = await api.post('/api/pdf/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    const { document_ids, total_pages } = response.data;
+    
+    // Convert document IDs to metadata objects
+    return document_ids.map((id: string, index: number) => ({
+      document_id: id,
+      filename: files[index].name,
+      page_count: Math.floor(total_pages / files.length) // Approximating page count per file
+    }));
+  } catch (error) {
+    console.error('Error uploading PDFs:', error);
+    throw error;
+  }
 };
 
 export const configureModel = async (config: ModelConfig): Promise<void> => {

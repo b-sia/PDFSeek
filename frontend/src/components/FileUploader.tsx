@@ -24,6 +24,7 @@ export const FileUploader = () => {
       setDocuments([...documents, ...uploadedDocs]);
       toast({
         title: 'Files uploaded successfully',
+        description: `Uploaded ${uploadedDocs.length} file(s)`,
         status: 'success',
         duration: 3000,
       });

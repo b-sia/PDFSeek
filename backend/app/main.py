@@ -14,6 +14,7 @@ from app.services.pdf_service import process_pdfs
 from app.services.session_service import session_service
 
 from app.api.routes import model
+from app.api.routes import pdf
 
 app = FastAPI(
     title="PDF Chat API",
@@ -22,6 +23,7 @@ app = FastAPI(
 )
 
 app.include_router(model.router, prefix="/api/model", tags=["model"])
+app.include_router(pdf.router, prefix="/api/pdf", tags=["pdf"])
 
 # Configure CORS
 app.add_middleware(
@@ -36,22 +38,6 @@ app.add_middleware(
 async def get_session():
     session_id = session_service.create_session()
     return session_id
-
-@app.post("/api/upload")
-async def upload_pdfs(
-    files: List[UploadFile] = File(...),
-    session_id: str = Depends(get_session)
-):
-    """
-    Upload and process PDF files.
-    """
-    try:
-        result = await process_pdfs(files)
-        for doc_id in result["document_ids"]:
-            session_service.add_document_to_session(session_id, doc_id)
-        return result
-    except Exception as e:
-        raise error_service.handle_error(e, context="PDF upload failed")
 
 @app.post("/api/chat")
 async def chat(
