@@ -7,12 +7,11 @@ import {
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
-  FormControl,
-  FormLabel,
   Button,
   Collapse,
   Text,
 } from '@chakra-ui/react';
+import { FormControl, FormLabel } from '@chakra-ui/form-control';
 import { useToast } from '@chakra-ui/toast';
 import { useStore } from '../store/useStore';
 import { configureModel, uploadLocalModel } from '../api/api';
