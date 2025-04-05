@@ -116,7 +116,7 @@ export const ModelConfigPanel = () => {
             <FormLabel>Temperature</FormLabel>
             <NumberInput
               value={modelConfig.temperature}
-              onChange={(_, value: any) => updateModelConfig({ temperature: value })}
+              onChange={(_: any, value: any) => updateModelConfig({ temperature: value })}
               min={0}
               max={1}
               step={0.01}
@@ -133,7 +133,7 @@ export const ModelConfigPanel = () => {
             <FormLabel>Max Tokens</FormLabel>
             <NumberInput
               value={modelConfig.max_tokens}
-              onChange={(_, value: any) => updateModelConfig({ max_tokens: value })}
+              onChange={(_: any, value: any) => updateModelConfig({ max_tokens: value })}
               min={100}
               max={4096}
               step={100}
@@ -150,7 +150,7 @@ export const ModelConfigPanel = () => {
             <FormLabel>Top P</FormLabel>
             <NumberInput
               value={modelConfig.top_p}
-              onChange={(_, value: any) => updateModelConfig({ top_p: value })}
+              onChange={(_: any, value: any) => updateModelConfig({ top_p: value })}
               min={0}
               max={1}
               step={0.01}
@@ -167,7 +167,7 @@ export const ModelConfigPanel = () => {
             <FormLabel>Repeat Penalty</FormLabel>
             <NumberInput
               value={modelConfig.repeat_penalty}
-              onChange={(_, value: any) => updateModelConfig({ repeat_penalty: value })}
+              onChange={(_: any, value: any) => updateModelConfig({ repeat_penalty: value })}
               min={0}
               max={2}
               step={0.1}
@@ -184,7 +184,7 @@ export const ModelConfigPanel = () => {
             <FormLabel>Context Length</FormLabel>
             <NumberInput
               value={modelConfig.n_ctx}
-              onChange={(_, value: any) => updateModelConfig({ n_ctx: value })}
+              onChange={(_: any, value: any) => updateModelConfig({ n_ctx: value })}
               min={1}
               max={4096}
               step={1}
@@ -201,7 +201,7 @@ export const ModelConfigPanel = () => {
             <FormLabel>GPU Layers</FormLabel>
             <NumberInput
               value={modelConfig.gpu_layers}
-              onChange={(_, value: any) => updateModelConfig({ gpu_layers: value })}
+              onChange={(_: any, value: any) => updateModelConfig({ gpu_layers: value })}
               min={-1}
               max={100}
               step={1}
