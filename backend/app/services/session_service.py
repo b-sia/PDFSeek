@@ -1,9 +1,11 @@
-from typing import Dict, Optional, List
-import uuid
-from datetime import datetime, timedelta
 import json
 import os
+import uuid
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional
+
 from app.core.config import settings
+
 
 class SessionService:
     def __init__(self):

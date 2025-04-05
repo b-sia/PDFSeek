@@ -1,15 +1,18 @@
 import os
 from typing import AsyncGenerator, Dict, List
-from langchain_openai import ChatOpenAI
-from langchain_community.llms import LlamaCpp
+
 from langchain.chains import ConversationalRetrievalChain
-from langchain.memory import ConversationBufferMemory
-from langchain.vectorstores import FAISS
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings import HuggingFaceEmbeddings
-from app.models.chat import ChatRequest, ChatResponse
+from langchain.memory import ConversationBufferMemory
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.vectorstores import FAISS
+from langchain_community.llms import LlamaCpp
+from langchain_openai import ChatOpenAI
+
 from app.core.config import settings
+from app.models.chat import ChatRequest, ChatResponse
 from app.services.vector_store import get_vector_store
+
 
 class ChatService:
     def __init__(self):

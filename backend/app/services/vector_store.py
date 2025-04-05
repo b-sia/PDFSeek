@@ -1,8 +1,11 @@
 import os
 from typing import Dict, Optional
-from langchain.vectorstores import FAISS
+
 from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.vectorstores import FAISS
+
 from app.core.config import settings
+
 
 class VectorStore:
     def __init__(self):

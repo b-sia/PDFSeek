@@ -1,9 +1,11 @@
 import logging
-from typing import Optional
-from fastapi import HTTPException
-import traceback
 import os
+import traceback
 from datetime import datetime
+from typing import Optional
+
+from fastapi import HTTPException
+
 
 class ErrorService:
     def __init__(self):

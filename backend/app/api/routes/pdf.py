@@ -1,7 +1,9 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
 from typing import List
-from app.services.pdf_service import process_pdfs
+
+from fastapi import APIRouter, File, HTTPException, UploadFile
+
 from app.models.pdf import PDFResponse
+from app.services.pdf_service import process_pdfs
 
 router = APIRouter()
 

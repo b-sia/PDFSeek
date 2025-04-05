@@ -1,7 +1,9 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File
+import os
+
+from fastapi import APIRouter, File, HTTPException, UploadFile
+
 from app.models.model import ModelConfig, ModelResponse
 from app.services.model_service import configure_model, upload_local_model
-import os
 
 router = APIRouter()
 

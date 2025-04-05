@@ -1,10 +1,13 @@
 import os
+import uuid
 from typing import Dict, List
+
 from fastapi import UploadFile
 from PyPDF2 import PdfReader
-from app.services.vector_store import get_vector_store
+
 from app.core.config import settings
-import uuid
+from app.services.vector_store import get_vector_store
+
 
 async def process_pdfs(files: List[UploadFile]) -> Dict[str, any]:
     """

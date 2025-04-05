@@ -1,8 +1,10 @@
+from typing import AsyncGenerator
+
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
+
 from app.models.chat import ChatRequest, ChatResponse
 from app.services.chat_service import process_chat_request
-from typing import AsyncGenerator
 
 router = APIRouter()
 

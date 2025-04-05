@@ -1,15 +1,17 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
+from typing import Dict, List
+
+import uvicorn
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from typing import List, Dict
-import uvicorn
+
 from app.core.config import settings
-from app.services.pdf_service import process_pdfs
+from app.models.schemas import ChatRequest, ChatResponse, ModelConfig
 from app.services.chat_service import process_chat_request
-from app.services.model_service import model_service
 from app.services.error_service import error_service
+from app.services.model_service import model_service
+from app.services.pdf_service import process_pdfs
 from app.services.session_service import session_service
-from app.models.schemas import ChatRequest, ModelConfig, ChatResponse
 
 app = FastAPI(
     title="PDF Chat API",

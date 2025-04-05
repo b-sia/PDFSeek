@@ -1,6 +1,8 @@
-from typing import Dict, Optional
-from app.core.config import settings
 import os
+from typing import Dict, Optional
+
+from app.core.config import settings
+
 
 class ModelService:
     def __init__(self):
