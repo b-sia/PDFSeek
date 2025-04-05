@@ -33,6 +33,7 @@ models
 # debug files
 launch.json
 
-# local session data and vector stores
+# local session data, vector stores, and logs
 backend/sessions/
 backend/vector_store/
+backend/logs/
