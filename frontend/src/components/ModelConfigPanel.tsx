@@ -8,7 +8,7 @@ import {
   NumberIncrementStepper,
   NumberDecrementStepper,
   Button,
-  Collapsible,
+  Collapse,
   Text,
 } from '@chakra-ui/react';
 import { FormControl, FormLabel } from '@chakra-ui/form-control';
@@ -109,7 +109,7 @@ export const ModelConfigPanel = () => {
         {showAdvanced ? 'Hide Advanced Settings' : 'Show Advanced Settings'}
       </Button>
 
-      <Collapsible.Root open={showAdvanced}>
+      <Collapse in={showAdvanced}>
         <VStack gap={4} align="stretch">
           <FormControl>
             <FormLabel>Temperature</FormLabel>
@@ -213,7 +213,7 @@ export const ModelConfigPanel = () => {
             </NumberInput>
           </FormControl>
         </VStack>
-      </Collapsible.Root>
+      </Collapse>
 
       <Button colorScheme="blue" onClick={handleSaveConfig}>
         Save Configuration
