@@ -77,7 +77,7 @@ export const ModelConfigPanel = () => {
   };
 
   return (
-    <VStack gap={4} align="stretch">
+    <VStack spacing={4} align="stretch">
       <FormControl>
         <FormLabel>Model Type</FormLabel>
         <Select
@@ -110,7 +110,7 @@ export const ModelConfigPanel = () => {
       </Button>
 
       <Collapse in={showAdvanced}>
-        <VStack gap={4} align="stretch">
+        <VStack spacing={4} align="stretch">
           <FormControl>
             <FormLabel>Temperature</FormLabel>
             <NumberInput

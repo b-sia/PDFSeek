@@ -53,7 +53,7 @@ export const FileUploader = () => {
   };
 
   return (
-    <VStack align="stretch" gap={4}>
+    <VStack align="stretch" spacing={4}>
       <Box
         {...getRootProps()}
         p={6}
@@ -76,7 +76,7 @@ export const FileUploader = () => {
           <Text fontWeight="bold" mb={2}>
             Uploaded Documents
           </Text>
-          <List gap={2}>
+          <List spacing={2}>
             {documents.map((doc: PDFMetadata) => (
               <ListItem
                 key={doc.document_id}

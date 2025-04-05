@@ -76,7 +76,7 @@ export const ChatInterface = () => {
   };
 
   return (
-    <VStack h="100%" gap={4}>
+    <VStack h="100%" spacing={4}>
       <Box
         flex={1}
         w="100%"
