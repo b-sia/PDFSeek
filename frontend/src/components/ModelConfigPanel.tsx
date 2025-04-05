@@ -20,7 +20,7 @@ import { ModelConfig } from '../types';
 export const ModelConfigPanel = () => {
   const { modelConfig, updateModelConfig, setLoading, setError } = useStore();
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [setLocalModelFile] = useState<File | null>(null);
+  const [_, setLocalModelFile] = useState<File | null>(null);
   const toast = useToast();
 
   const handleModelTypeChange = (value: string) => {
