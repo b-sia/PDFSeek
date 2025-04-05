@@ -1,26 +1,131 @@
-## Overview
-------------
+# PDF Chat Application
 
-MultiPDF chat app lets users upload their PDF documents, convert them to a knowledge database and let them query
-from the knowledge base. Based on the tutorial from  https://github.com/alejandro-ao/ask-multiple-pdfs
+A modern web application for chatting with PDF documents using various LLM models. The application is built with a React frontend and FastAPI backend.
 
-## How It Works
+## Features
 
-The application follows these steps to provide responses to your questions:
+- Upload and process multiple PDF documents
+- Chat interface with streaming responses
+- Support for both OpenAI GPT-3.5 and local LLM models
+- Advanced model configuration options
+- Real-time chat updates
+- Document source tracking
 
-1. PDF Loading: The app reads multiple PDF documents and extracts their text content.
+## Project Structure
 
-2. Text Chunking: The extracted text is divided into smaller chunks that can be processed effectively.
+```
+pdf_chat/
+├── backend/
+│   ├── app/
+│   │   ├── api/
+│   │   │   └── routes/
+│   │   │       ├── pdf.py
+│   │   │       ├── chat.py
+│   │   │       └── model.py
+│   │   ├── core/
+│   │   ├── models/
+│   │   ├── services/
+│   │   └── utils/
+│   ├── requirements.txt
+│   └── README.md
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── FileUploader.tsx
+│   │   │   ├── ChatInterface.tsx
+│   │   │   └── ModelConfigPanel.tsx
+│   │   ├── store/
+│   │   ├── api/
+│   │   └── types/
+│   ├── package.json
+│   └── README.md
+└── README.md
+```
 
-3. Language Model: The application utilizes a language model to generate vector representations (embeddings) of the text chunks.
+## Setup Instructions
 
-4. Similarity Matching: When you ask a question, the app compares it with the text chunks and identifies the most semantically similar ones.
+### Backend Setup
 
-5. Response Generation: The selected chunks are passed to the language model, which generates a response based on the relevant content of the PDFs.
+1. Create a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
 
-## Models and APIs
-By default, the app uses GPT-3.5-turbo as the backend LLM, which requires the user to sign up for an OpenAPI account and get the API key. Users would
-also have to top up their account with token credits.
+2. Install dependencies:
+```bash
+cd backend
+pip install -r requirements.txt
+```
 
-Another approach is to run LLM models locally, but be warned, as this requires your PC to have fairly powerful hardware. Models can be obtained
-from https://huggingface.co/models.
+3. Set up environment variables:
+```bash
+cp .env.example .env
+# Edit .env with your OpenAI API key and other configurations
+```
+
+4. Run the backend server:
+```bash
+uvicorn app.main:app --reload
+```
+
+### Frontend Setup
+
+1. Install dependencies:
+```bash
+cd frontend
+npm install
+```
+
+2. Set up environment variables:
+```bash
+cp .env.example .env
+# Edit .env with your backend API URL
+```
+
+3. Run the development server:
+```bash
+npm run dev
+```
+
+## API Documentation
+
+The backend API is documented using OpenAPI/Swagger. Once the backend server is running, visit:
+```
+http://localhost:8000/docs
+```
+
+### Key Endpoints
+
+- `POST /api/pdf/upload`: Upload and process PDF documents
+- `POST /api/chat/stream`: Stream chat responses
+- `POST /api/model/configure`: Configure model parameters
+- `POST /api/model/upload-local`: Upload local LLM model
+
+## Development
+
+### Backend Development
+
+- The backend uses FastAPI for high performance and automatic API documentation
+- Core LLM logic is separated into services
+- PDF processing is handled asynchronously
+- Model configuration is managed through environment variables
+
+### Frontend Development
+
+- Built with React and TypeScript for type safety
+- Uses Chakra UI for modern, accessible components
+- State management with Zustand
+- Real-time updates with streaming responses
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+
+MIT License - see LICENSE file for details
