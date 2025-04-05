@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import {
-  Box,
   VStack,
-  HStack,
   Select,
   NumberInput,
   NumberInputField,
@@ -12,10 +10,10 @@ import {
   FormControl,
   FormLabel,
   Button,
-  useToast,
   Collapse,
   Text,
 } from '@chakra-ui/react';
+import { useToast } from '@chakra-ui/toast';
 import { useStore } from '../store/useStore';
 import { configureModel, uploadLocalModel } from '../api/api';
 import { ModelConfig } from '../types';
@@ -23,7 +21,7 @@ import { ModelConfig } from '../types';
 export const ModelConfigPanel = () => {
   const { modelConfig, updateModelConfig, setLoading, setError } = useStore();
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [localModelFile, setLocalModelFile] = useState<File | null>(null);
+  const [setLocalModelFile] = useState<File | null>(null);
   const toast = useToast();
 
   const handleModelTypeChange = (value: string) => {
