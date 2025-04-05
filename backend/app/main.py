@@ -15,6 +15,7 @@ from app.services.session_service import session_service
 
 from app.api.routes import model
 from app.api.routes import pdf
+from app.api.routes import chat
 
 app = FastAPI(
     title="PDF Chat API",
@@ -24,6 +25,7 @@ app = FastAPI(
 
 app.include_router(model.router, prefix="/api/model", tags=["model"])
 app.include_router(pdf.router, prefix="/api/pdf", tags=["pdf"])
+app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 
 # Configure CORS
 app.add_middleware(
