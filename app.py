@@ -25,7 +25,7 @@ def render_sidebar():
     if model_type == "Local LLM":
         uploaded_model = st.file_uploader(
             "Upload GGUF Model File",
-            type=["gguf"],
+            type=["gguf", "safetensors", "bin", "pt"],
             key="model_uploader"
         )
         

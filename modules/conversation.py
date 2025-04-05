@@ -1,15 +1,21 @@
+import os
 from typing import Any, Dict, List
 
 import streamlit as st
+import torch
+from auto_gptq import AutoGPTQForCausalLM
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain_community.llms import LlamaCpp
 from langchain_core.messages import HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_huggingface import HuggingFacePipeline
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel
+from torch.cuda import is_available
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 from modules.templates import bot_template, user_template
 
@@ -29,17 +35,44 @@ def get_llm():
         if "local_model_path" not in st.session_state:
             raise ValueError("Please upload a local model first")
         
-        return LlamaCpp(
-            model_path=st.session_state.local_model_path,
-            max_tokens=st.session_state.get("max_local_tokens_input", 512),
-            n_gpu_layers=st.session_state.get("gpu_layers_input", -1),
-            temperature=st.session_state.get("temperature_input", 0.1),
-            top_p=st.session_state.get("top_p_input", 0.95),
-            repeat_penalty=st.session_state.get("repeat_penalty_input", 1.2),
-            n_ctx=st.session_state.get("n_ctx_input", 4096),
-            callbacks=[StreamingStdOutCallbackHandler()],
-            verbose=False
-        )
+        model_path = st.session_state.local_model_path
+        file_ext = os.path.splitext(model_path)[1].lower()
+        
+        if file_ext == ".gguf":
+            return LlamaCpp(
+                model_path=model_path,
+                max_tokens=st.session_state.get("max_local_tokens_input", 512),
+                n_gpu_layers=st.session_state.get("gpu_layers_input", -1 if is_available() else 0),
+                temperature=st.session_state.get("temperature_input", 0.1),
+                top_p=st.session_state.get("top_p_input", 0.95),
+                repeat_penalty=st.session_state.get("repeat_penalty_input", 1.2),
+                n_ctx=st.session_state.get("n_ctx_input", 4096),
+                verbose=False
+            )
+        elif file_ext == ".safetensors":
+            # Load GPTQ model
+            model_basename = os.path.basename(model_path).replace(".safetensors", "")
+            model = AutoGPTQForCausalLM.from_quantized(
+                model_name_or_path=os.path.dirname(model_path),
+                model_basename=model_basename,
+                use_safetensors=True,
+                trust_remote_code=True,
+                device="cuda:0" if torch.cuda.is_available() else "cpu",
+                use_triton=False,
+                quantize_config=None
+            )
+            tokenizer = AutoTokenizer.from_pretrained(
+                os.path.dirname(model_path)
+            )
+            pipe = pipeline(
+                "text-generation",
+                model=model,
+                tokenizer=tokenizer,
+                max_new_tokens=st.session_state.get("max_local_tokens_input", 512)
+            )
+            return HuggingFacePipeline(pipeline=pipe)
+        else:
+            raise ValueError(f"Unsupported file format: {file_ext}")
 
 
 def handle_userinput(user_question: str) -> None:
@@ -82,22 +115,38 @@ def build_conversation_graph(vectorstore) -> StateGraph:
         return {"retrieved_docs": docs}
 
     def generate_response(state: ChatState):
-        llm = get_llm()  # Use the selected LLM
+        llm = get_llm()
         context = [doc.page_content for doc in state.retrieved_docs]
+        
+        # Format chat history into a string
+        formatted_chat_history = "\n".join(
+            [f"User: {msg.content}" if isinstance(msg, HumanMessage) else f"Assistant: {msg.content}" 
+            for msg in state.chat_history]
+        )
+        
+        # Use different templates based on model type
+        if isinstance(llm, ChatOpenAI):
+            prompt_template = ChatPromptTemplate.from_template(
+                "Answer based on context:\n{context}\n\nChat history:\n{chat_history}\n\nQuestion: {input}"
+            )
+        else:
+            # Use a template that expects pre-formatted strings
+            from langchain.prompts import PromptTemplate
+            prompt_template = PromptTemplate.from_template(
+                "Answer based on context:\n{context}\n\nChat history:\n{chat_history}\n\nQuestion: {input}\n\nAnswer:"
+            )
         
         qa_chain = create_retrieval_chain(
             retriever=vectorstore.as_retriever(),
             combine_docs_chain=create_stuff_documents_chain(
                 llm,
-                ChatPromptTemplate.from_template(
-                    "Answer based on context:\n{context}\n\nChat history:\n{chat_history}\n\nQuestion: {input}"
-                )
+                prompt_template
             )
         )
         
         response = qa_chain.invoke({
             "input": state.input,
-            "chat_history": state.chat_history,
+            "chat_history": formatted_chat_history,  # Pass formatted string
             "context": context
         })
         
