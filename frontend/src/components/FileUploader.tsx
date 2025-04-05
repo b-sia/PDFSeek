@@ -4,13 +4,11 @@ import {
   Box,
   Text,
   VStack,
-  useToast,
-  Progress,
   List,
   ListItem,
-  IconButton,
+  CloseButton
 } from '@chakra-ui/react';
-import { CloseIcon } from '@chakra-ui/icons';
+import { useToast } from '@chakra-ui/toast';
 import { useStore } from '../store/useStore';
 import { uploadPDFs } from '../api/api';
 import { PDFMetadata } from '../types';
@@ -55,7 +53,7 @@ export const FileUploader = () => {
   };
 
   return (
-    <VStack spacing={4} align="stretch">
+    <VStack align="stretch" gap={4}>
       <Box
         {...getRootProps()}
         p={6}
@@ -78,7 +76,7 @@ export const FileUploader = () => {
           <Text fontWeight="bold" mb={2}>
             Uploaded Documents
           </Text>
-          <List spacing={2}>
+          <List.Root gap={2}>
             {documents.map((doc: PDFMetadata) => (
               <ListItem
                 key={doc.document_id}
@@ -90,16 +88,15 @@ export const FileUploader = () => {
                 borderRadius="md"
               >
                 <Text>{doc.filename}</Text>
-                <IconButton
+                <CloseButton
                   aria-label="Remove document"
-                  icon={<CloseIcon />}
                   size="sm"
                   onClick={() => removeDocument(doc.document_id)}
                   colorScheme="red"
                 />
               </ListItem>
             ))}
-          </List>
+          </List.Root>
         </Box>
       )}
     </VStack>

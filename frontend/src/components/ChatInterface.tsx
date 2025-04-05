@@ -6,10 +6,10 @@ import {
   Input,
   Button,
   Text,
-  useToast,
   Flex,
   Avatar,
 } from '@chakra-ui/react';
+import { useToast } from '@chakra-ui/toast';
 import { useStore } from '../store/useStore';
 import { streamChat } from '../api/api';
 import { ChatMessage } from '../types';
@@ -77,7 +77,7 @@ export const ChatInterface = () => {
   };
 
   return (
-    <VStack h="100%" spacing={4}>
+    <VStack h="100%" gap={4}>
       <Box
         flex={1}
         w="100%"
@@ -126,7 +126,7 @@ export const ChatInterface = () => {
           <Button
             type="submit"
             colorScheme="blue"
-            isLoading={isLoading}
+            loading={isLoading}
             disabled={!input.trim() || documents.length === 0}
           >
             Send
