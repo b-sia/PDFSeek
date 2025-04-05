@@ -13,11 +13,15 @@ from app.services.model_service import model_service
 from app.services.pdf_service import process_pdfs
 from app.services.session_service import session_service
 
+from app.api.routes import model
+
 app = FastAPI(
     title="PDF Chat API",
     description="API for chatting with PDF documents using various LLM models",
     version="1.0.0"
 )
+
+app.include_router(model.router, prefix="/api/model", tags=["model"])
 
 # Configure CORS
 app.add_middleware(
@@ -71,48 +75,6 @@ async def chat(
         return StreamingResponse(generate(), media_type="text/event-stream")
     except Exception as e:
         raise error_service.handle_error(e, context="Chat processing failed")
-
-@app.post("/api/model/config")
-async def update_model_config(
-    config: ModelConfig,
-    session_id: str = Depends(get_session)
-):
-    """
-    Update model configuration.
-    """
-    try:
-        updated_config = model_service.update_config(config.dict())
-        session_service.update_session(session_id, {"model_config": updated_config})
-        return updated_config
-    except Exception as e:
-        raise error_service.handle_error(e, context="Model configuration update failed")
-
-@app.get("/api/model/config")
-async def get_model_config(session_id: str = Depends(get_session)):
-    """
-    Get current model configuration.
-    """
-    try:
-        return model_service.get_config()
-    except Exception as e:
-        raise error_service.handle_error(e, context="Failed to get model configuration")
-
-@app.post("/api/model/upload")
-async def upload_local_model(
-    model_file: UploadFile = File(...),
-    session_id: str = Depends(get_session)
-):
-    """
-    Upload a local LLM model file.
-    """
-    try:
-        model_path = model_service.upload_local_model(
-            await model_file.read(),
-            model_file.filename
-        )
-        return {"model_path": model_path}
-    except Exception as e:
-        raise error_service.handle_error(e, context="Model upload failed")
 
 @app.get("/api/session/{session_id}")
 async def get_session_data(session_id: str):
