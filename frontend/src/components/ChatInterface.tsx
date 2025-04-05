@@ -7,7 +7,6 @@ import {
   Button,
   Text,
   Flex,
-  Avatar,
 } from '@chakra-ui/react';
 import { useToast } from '@chakra-ui/toast';
 import { useStore } from '../store/useStore';
@@ -126,7 +125,7 @@ export const ChatInterface = () => {
           <Button
             type="submit"
             colorScheme="blue"
-            loading={isLoading}
+            isLoading={isLoading}
             disabled={!input.trim() || documents.length === 0}
           >
             Send

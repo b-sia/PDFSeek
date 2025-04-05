@@ -76,7 +76,7 @@ export const FileUploader = () => {
           <Text fontWeight="bold" mb={2}>
             Uploaded Documents
           </Text>
-          <List.Root gap={2}>
+          <List gap={2}>
             {documents.map((doc: PDFMetadata) => (
               <ListItem
                 key={doc.document_id}
@@ -96,7 +96,7 @@ export const FileUploader = () => {
                 />
               </ListItem>
             ))}
-          </List.Root>
+          </List>
         </Box>
       )}
     </VStack>
