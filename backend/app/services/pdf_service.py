@@ -27,12 +27,18 @@ async def process_pdfs(files: List[UploadFile]) -> Dict[str, any]:
             pdf_reader = PdfReader(file.file)
             total_pages += len(pdf_reader.pages)
 
-            # Process each page
+            # Collect all text from the PDF
+            all_text_chunks = []
             for page in pdf_reader.pages:
                 text = page.extract_text()
                 if text.strip():
-                    # Add to vector store
-                    vector_store.add_document(doc_id, text)
+                    all_text_chunks.append(text)
+
+            # Add all text chunks to vector store in a single operation if there's content
+            if all_text_chunks:
+                store = vector_store.get_store(doc_id)
+                store.add_texts(all_text_chunks)
+                store.save_local(os.path.join(vector_store.store_dir, f"{doc_id}.faiss"))
 
             document_ids.append(doc_id)
             file.file.close()
