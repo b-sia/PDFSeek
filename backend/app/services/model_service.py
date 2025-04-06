@@ -27,6 +27,10 @@ class ModelService:
             if config["model_type"] not in ["openai", "local"]:
                 raise ValueError("Invalid model type. Must be 'openai' or 'local'")
             self.current_config["model_type"] = config["model_type"]
+            
+            # Automatically set embedding type based on model type if not explicitly provided
+            if "embedding_type" not in config:
+                self.current_config["embedding_type"] = "openai" if config["model_type"] == "openai" else "huggingface"
 
         if "temperature" in config:
             if not 0 <= config["temperature"] <= 2:

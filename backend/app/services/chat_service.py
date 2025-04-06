@@ -1,6 +1,6 @@
 import os
 import asyncio
-from typing import AsyncGenerator, Dict, List, Any
+from typing import AsyncGenerator, Dict, List, Any, Optional
 
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_core.messages import HumanMessage, AIMessage
@@ -24,20 +24,21 @@ class ChatState(BaseModel):
     chat_history: List[Any] = Field(default_factory=list)
     document_ids: List[str] = Field(default_factory=list)
     retrieved_docs: List[Any] = Field(default_factory=list)
-    response: str = None
+    response: str = ""
     model_type: str = "openai"
-    model_path: str = None
+    model_path: Optional[str] = None
+    embedding_type: str = "openai"
 
 
 class ChatService:
     def __init__(self):
-        self.embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+        # Get the vector store instance which handles embeddings
+        self.vector_store = get_vector_store()
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=settings.CHUNK_SIZE,
             chunk_overlap=settings.CHUNK_OVERLAP,
             length_function=len,
         )
-        self.vector_store = get_vector_store()
         # Create and compile the graph
         self.graph = self._build_conversation_graph()
         # Session storage for chat histories
@@ -54,7 +55,7 @@ class ChatService:
             )
         elif state.model_type == "local":
             if not state.model_path:
-                raise ValueError("Model path is required for local models")
+                raise ValueError("No local model file available. Please upload a model first or select OpenAI model type.")
             return LlamaCpp(
                 model_path=state.model_path,
                 temperature=settings.DEFAULT_TEMPERATURE,
@@ -93,7 +94,7 @@ class ChatService:
                     
             # Create a temporary vector store for retrieval
             if docs:
-                temp_vectorstore = FAISS.from_texts(docs, self.embeddings)
+                temp_vectorstore = FAISS.from_texts(docs, self.vector_store.embeddings)
                 # Get relevant docs for the question
                 retrieved_docs = temp_vectorstore.similarity_search(state.question, k=5)
                 return {"retrieved_docs": retrieved_docs}
@@ -192,13 +193,20 @@ class ChatService:
             # Get configuration from model service
             config = model_service.get_config()
             
+            # Create initial state
+            initial_state = self._prepare_chat_state(request)
+            
             # Determine model path for local models
-            model_path = None
-            if request.model_type == "local":
+            if initial_state.model_type == "local":
+                model_path = None
+                
+                # Check request for model path
                 if hasattr(request, 'model_path') and request.model_path:
                     model_path = request.model_path
-                elif 'model_path' in config:
+                # Check config for model path
+                elif 'model_path' in config and config['model_path']:
                     model_path = config['model_path']
+                # Find a default model
                 else:
                     # Use the first GGUF file found in the model directory as default
                     model_files = [f for f in os.listdir(settings.MODEL_DIR) if f.endswith('.gguf')]
@@ -206,18 +214,9 @@ class ChatService:
                         model_path = os.path.join(settings.MODEL_DIR, model_files[0])
                     else:
                         raise ValueError("No local model files found. Please upload a model first.")
-            
-            # Get chat history for this session
-            chat_history = self.get_or_create_chat_history(request.session_id)
-            
-            # Create initial state
-            initial_state = ChatState(
-                question=request.question,
-                chat_history=chat_history,
-                document_ids=request.document_ids or [],
-                model_type=request.model_type,
-                model_path=model_path
-            )
+                
+                # Update model path in state
+                initial_state.model_path = model_path
             
             # Process through the graph
             final_state = self.graph.invoke(initial_state)
@@ -231,6 +230,32 @@ class ChatService:
         except Exception as e:
             raise Exception(f"Error processing chat request: {str(e)}")
 
+    def _prepare_chat_state(self, request: ChatRequest) -> ChatState:
+        """Prepare chat state from request and model configuration."""
+        config = model_service.get_config()
+        
+        # Set the model_type from the config
+        model_type = config.get("model_type", "openai")
+        
+        # Ensure embedding_type matches model_type
+        if "embedding_type" not in config or config["embedding_type"] is None:
+            config["embedding_type"] = "openai" if model_type == "openai" else "huggingface"
+        
+        # Update embedding type in vector store
+        self.vector_store.update_embeddings(config["embedding_type"])
+        
+        # Get model path if available
+        model_path = config.get("model_path")
+            
+        return ChatState(
+            question=request.question,
+            chat_history=self.session_histories.get(request.session_id, []),
+            document_ids=request.document_ids,
+            model_type=model_type,
+            model_path=model_path,  # This can be None now
+            embedding_type=config["embedding_type"]
+        )
+
 
 # Create singleton instance
 chat_service = ChatService()
@@ -238,6 +263,7 @@ chat_service = ChatService()
 async def process_chat_request(request: ChatRequest) -> AsyncGenerator[str, None]:
     """
     Process a chat request and stream the response.
+    Entry point function that uses the singleton instance.
     """
     async for chunk in chat_service.process_chat_request(request):
         yield chunk 

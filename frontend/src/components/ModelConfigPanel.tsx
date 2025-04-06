@@ -23,8 +23,42 @@ export const ModelConfigPanel = () => {
   const [_, setLocalModelFile] = useState<File | null>(null);
   const toast = useToast();
 
-  const handleModelTypeChange = (value: string) => {
-    updateModelConfig({ model_type: value as 'openai' | 'local' });
+  const handleModelTypeChange = async (value: string) => {
+    const modelType = value as 'openai' | 'local';
+    // Automatically set embedding type based on model type
+    const updatedConfig = { 
+      model_type: modelType,
+      embedding_type: modelType === 'openai' ? 'openai' as const : 'huggingface' as const
+    };
+    
+    // Update local state first
+    updateModelConfig(updatedConfig);
+    
+    // Immediately save the configuration to the backend
+    try {
+      setLoading(true);
+      await configureModel({
+        ...modelConfig,
+        ...updatedConfig
+      });
+      toast({
+        title: 'Model type updated',
+        description: `Changed to ${modelType} model with ${updatedConfig.embedding_type} embeddings`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to update model type');
+      toast({
+        title: 'Update failed',
+        description: error instanceof Error ? error.message : 'Failed to update model type',
+        status: 'error',
+        duration: 5000,
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLocalModelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,6 +121,11 @@ export const ModelConfigPanel = () => {
           <option value="openai">OpenAI GPT-3.5</option>
           <option value="local">Local LLM</option>
         </Select>
+        <Text fontSize="xs" color="gray.500" mt={1}>
+          {modelConfig.model_type === 'openai' 
+            ? 'Uses OpenAI embeddings for document search' 
+            : 'Uses HuggingFace embeddings for document search'}
+        </Text>
       </FormControl>
 
       {modelConfig.model_type === 'local' && (
