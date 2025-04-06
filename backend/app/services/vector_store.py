@@ -5,6 +5,7 @@ from langchain.embeddings import HuggingFaceEmbeddings, OpenAIEmbeddings
 from langchain.vectorstores import FAISS
 
 from app.core.config import settings
+from app.services.model_service import model_service
 
 
 class VectorStore:
@@ -14,6 +15,14 @@ class VectorStore:
         Args:
             embedding_type: The type of embeddings to use ("huggingface" or "openai")
         """
+        self._create_embeddings(embedding_type)
+        self.store_dir = settings.VECTOR_STORE_DIR
+        self.stores: Dict[str, FAISS] = {}
+        os.makedirs(self.store_dir, exist_ok=True)
+        self.embedding_type = embedding_type
+
+    def _create_embeddings(self, embedding_type: str):
+        """Create embedding model based on the specified type"""
         if embedding_type == "openai":
             if not settings.OPENAI_API_KEY:
                 raise ValueError("OPENAI_API_KEY is not set in environment variables")
@@ -24,14 +33,24 @@ class VectorStore:
             self.embeddings = HuggingFaceEmbeddings(
                 model_name="sentence-transformers/all-MiniLM-L6-v2"
             )
-        
-        self.store_dir = settings.VECTOR_STORE_DIR
-        self.stores: Dict[str, FAISS] = {}
-        os.makedirs(self.store_dir, exist_ok=True)
-        self.embedding_type = embedding_type
+            
+    def update_embeddings(self, embedding_type: str):
+        """Update the embedding model if the type has changed"""
+        if embedding_type != self.embedding_type:
+            self._create_embeddings(embedding_type)
+            self.embedding_type = embedding_type
+            # Clear the stores to ensure they use the new embeddings
+            self.stores = {}
 
     def get_store(self, doc_id: str) -> FAISS:
         """Get or create a vector store for a document."""
+        # Get current embedding type from model service configuration
+        config_embedding_type = model_service.get_config().get("embedding_type")
+        
+        # Update embeddings if necessary
+        if config_embedding_type != self.embedding_type:
+            self.update_embeddings(config_embedding_type)
+            
         if doc_id not in self.stores:
             store_path = os.path.join(self.store_dir, f"{doc_id}.faiss")
             if os.path.exists(store_path):
@@ -70,7 +89,7 @@ class VectorStore:
             del self.stores[doc_id]
 
 # Create singleton instance with default embedding type
-vector_store = VectorStore(embedding_type=settings.DEFAULT_EMBEDDING_TYPE if hasattr(settings, "DEFAULT_EMBEDDING_TYPE") else "huggingface")
+vector_store = VectorStore(embedding_type=settings.DEFAULT_EMBEDDING_TYPE)
 
 def get_vector_store() -> VectorStore:
     """Get the vector store singleton instance."""

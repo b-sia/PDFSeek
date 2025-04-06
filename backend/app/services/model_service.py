@@ -14,7 +14,8 @@ class ModelService:
             "top_p": settings.DEFAULT_TOP_P,
             "repeat_penalty": settings.DEFAULT_REPEAT_PENALTY,
             "n_ctx": settings.DEFAULT_N_CTX,
-            "gpu_layers": settings.DEFAULT_GPU_LAYERS
+            "gpu_layers": settings.DEFAULT_GPU_LAYERS,
+            "embedding_type": settings.DEFAULT_EMBEDDING_TYPE
         }
 
     def update_config(self, config: Dict) -> Dict:
@@ -56,6 +57,11 @@ class ModelService:
             if config["gpu_layers"] < 0:
                 raise ValueError("GPU layers must be greater than or equal to 0")
             self.current_config["gpu_layers"] = config["gpu_layers"]
+
+        if "embedding_type" in config:
+            if config["embedding_type"] not in ["huggingface", "openai"]:
+                raise ValueError("Invalid embedding type. Must be 'huggingface' or 'openai'")
+            self.current_config["embedding_type"] = config["embedding_type"]
 
         return self.current_config
 
