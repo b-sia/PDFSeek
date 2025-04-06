@@ -1,17 +1,32 @@
 import os
-from typing import AsyncGenerator, Dict, List
+import asyncio
+from typing import AsyncGenerator, Dict, List, Any
 
-from langchain.chains import ConversationalRetrievalChain
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.memory import ConversationBufferMemory
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores import FAISS
+from langchain_community.vectorstores import FAISS
 from langchain_community.llms import LlamaCpp
 from langchain_openai import ChatOpenAI
+from langgraph.graph import END, StateGraph
+from pydantic import BaseModel, Field
 
 from app.core.config import settings
 from app.models.chat import ChatRequest, ChatResponse
+from app.services.model_service import model_service
 from app.services.vector_store import get_vector_store
+
+
+class ChatState(BaseModel):
+    """State for the chat graph."""
+    question: str
+    chat_history: List[Any] = Field(default_factory=list)
+    document_ids: List[str] = Field(default_factory=list)
+    retrieved_docs: List[Any] = Field(default_factory=list)
+    response: str = None
+    model_type: str = "openai"
+    model_path: str = None
 
 
 class ChatService:
@@ -22,25 +37,26 @@ class ChatService:
             chunk_overlap=settings.CHUNK_OVERLAP,
             length_function=len,
         )
-        self.memory = ConversationBufferMemory(
-            memory_key="chat_history",
-            return_messages=True
-        )
         self.vector_store = get_vector_store()
+        # Create and compile the graph
+        self.graph = self._build_conversation_graph()
+        # Session storage for chat histories
+        self.session_histories: Dict[str, List[Any]] = {}
 
-    async def _get_llm(self, model_type: str, model_path: str = None) -> ChatOpenAI | LlamaCpp:
-        if model_type == "openai":
+    def _get_llm(self, state: ChatState):
+        """Get the appropriate LLM based on the state."""
+        if state.model_type == "openai":
             return ChatOpenAI(
                 model="gpt-3.5-turbo",
                 temperature=settings.DEFAULT_TEMPERATURE,
                 max_tokens=settings.DEFAULT_MAX_TOKENS,
                 streaming=True
             )
-        elif model_type == "local":
-            if not model_path:
+        elif state.model_type == "local":
+            if not state.model_path:
                 raise ValueError("Model path is required for local models")
             return LlamaCpp(
-                model_path=model_path,
+                model_path=state.model_path,
                 temperature=settings.DEFAULT_TEMPERATURE,
                 max_tokens=settings.DEFAULT_MAX_TOKENS,
                 top_p=settings.DEFAULT_TOP_P,
@@ -50,60 +66,171 @@ class ChatService:
                 streaming=True
             )
         else:
-            raise ValueError(f"Unsupported model type: {model_type}")
+            raise ValueError(f"Unsupported model type: {state.model_type}")
 
-    async def _get_chain(self, llm, document_ids: List[str]):
-        # Get relevant documents from vector store
-        docs = []
-        for doc_id in document_ids:
-            doc = self.vector_store.get_document(doc_id)
-            if doc:
-                docs.extend(self.text_splitter.split_text(doc))
-
-        # Create vector store from documents
-        doc_vector_store = FAISS.from_texts(
-            docs,
-            self.embeddings
-        )
-
-        # Create chain
-        return ConversationalRetrievalChain.from_llm(
-            llm=llm,
-            retriever=doc_vector_store.as_retriever(),
-            memory=self.memory,
-            return_source_documents=True
-        )
-
-    async def process_chat_request(self, request: ChatRequest) -> AsyncGenerator[str, None]:
-        try:
-            # Get LLM based on model type
-            llm = await self._get_llm(request.model_type)
+    def _build_conversation_graph(self) -> StateGraph:
+        """Build the conversation graph for processing chat requests."""
+        
+        def prepare_inputs(state: ChatState):
+            """Prepare the initial state with the user's question."""
+            # Add the user's message to chat history
+            if state.chat_history is None:
+                state.chat_history = []
             
-            # Get chain with relevant documents
-            chain = await self._get_chain(llm, request.document_ids or [])
-
-            # Process the chat request
-            response = await chain.acall({
-                "question": request.question,
-                "chat_history": self.memory.chat_memory.messages
-            })
-
-            # Extract sources
-            sources = [
-                doc.page_content[:200] + "..." 
-                for doc in response["source_documents"]
-            ]
-
-            # Stream the response
-            for chunk in response["answer"]:
-                yield chunk
-
-            # Update memory with the complete response
-            self.memory.chat_memory.add_user_message(request.question)
-            self.memory.chat_memory.add_ai_message(response["answer"])
-
+            # Add user message to history
+            state.chat_history.append(HumanMessage(content=state.question))
+            
+            return state
+        
+        def retrieve_documents(state: ChatState):
+            """Retrieve relevant documents from the vector store."""
+            # Get document content from vector store
+            docs = []
+            for doc_id in state.document_ids:
+                doc = self.vector_store.get_document(doc_id)
+                if doc:
+                    docs.extend(self.text_splitter.split_text(doc))
+                    
+            # Create a temporary vector store for retrieval
+            if docs:
+                temp_vectorstore = FAISS.from_texts(docs, self.embeddings)
+                # Get relevant docs for the question
+                retrieved_docs = temp_vectorstore.similarity_search(state.question, k=5)
+                return {"retrieved_docs": retrieved_docs}
+            
+            # No documents or no relevant results
+            return {"retrieved_docs": []}
+        
+        def generate_response(state: ChatState):
+            """Generate a response using the LLM."""
+            llm = self._get_llm(state)
+            
+            # Extract context from retrieved documents
+            context = "\n\n".join([doc.page_content for doc in state.retrieved_docs])
+            if not context:
+                context = "No relevant information found."
+            
+            # Format chat history as a string for the prompt
+            formatted_history = ""
+            for msg in state.chat_history:
+                role = "User" if isinstance(msg, HumanMessage) else "Assistant"
+                formatted_history += f"{role}: {msg.content}\n"
+            
+            # Create prompt based on model type
+            if state.model_type == "openai":
+                prompt = ChatPromptTemplate.from_messages([
+                    ("system", "You are a helpful assistant. Answer the user's question based on the following context:\n\n{context}"),
+                    MessagesPlaceholder(variable_name="chat_history"),
+                    ("human", "{question}")
+                ])
+                
+                # Get response
+                chain = prompt | llm
+                response = chain.invoke({
+                    "context": context,
+                    "chat_history": state.chat_history[:-1],  # Exclude the current question
+                    "question": state.question
+                })
+                answer = response.content
+            else:
+                # For non-ChatOpenAI models that expect a formatted string
+                template = """
+                You are a helpful assistant. Answer the user's question based on the following context:
+                
+                {context}
+                
+                Chat history:
+                {chat_history}
+                
+                User question: {question}
+                
+                Your answer:
+                """
+                
+                # Get response - handle differently for non-chat models
+                response = llm.invoke(template.format(
+                    context=context,
+                    chat_history=formatted_history,
+                    question=state.question
+                ))
+                answer = response
+            
+            # Add assistant message to history
+            state.chat_history.append(AIMessage(content=answer))
+            state.response = answer
+            
+            return state
+        
+        # Define the workflow
+        workflow = StateGraph(ChatState)
+        
+        # Add nodes
+        workflow.add_node("prepare_inputs", prepare_inputs)
+        workflow.add_node("retrieve_documents", retrieve_documents)
+        workflow.add_node("generate_response", generate_response)
+        
+        # Set entry point
+        workflow.set_entry_point("prepare_inputs")
+        
+        # Define edges
+        workflow.add_edge("prepare_inputs", "retrieve_documents")
+        workflow.add_edge("retrieve_documents", "generate_response")
+        workflow.add_edge("generate_response", END)
+        
+        # Compile the graph
+        return workflow.compile()
+    
+    def get_or_create_chat_history(self, session_id: str) -> List[Any]:
+        """Get or create a chat history for a session."""
+        if session_id not in self.session_histories:
+            self.session_histories[session_id] = []
+        return self.session_histories[session_id]
+    
+    async def process_chat_request(self, request: ChatRequest) -> AsyncGenerator[str, None]:
+        """Process a chat request and stream the response."""
+        try:
+            # Get configuration from model service
+            config = model_service.get_config()
+            
+            # Determine model path for local models
+            model_path = None
+            if request.model_type == "local":
+                if hasattr(request, 'model_path') and request.model_path:
+                    model_path = request.model_path
+                elif 'model_path' in config:
+                    model_path = config['model_path']
+                else:
+                    # Use the first GGUF file found in the model directory as default
+                    model_files = [f for f in os.listdir(settings.MODEL_DIR) if f.endswith('.gguf')]
+                    if model_files:
+                        model_path = os.path.join(settings.MODEL_DIR, model_files[0])
+                    else:
+                        raise ValueError("No local model files found. Please upload a model first.")
+            
+            # Get chat history for this session
+            chat_history = self.get_or_create_chat_history(request.session_id)
+            
+            # Create initial state
+            initial_state = ChatState(
+                question=request.question,
+                chat_history=chat_history,
+                document_ids=request.document_ids or [],
+                model_type=request.model_type,
+                model_path=model_path
+            )
+            
+            # Process through the graph
+            final_state = self.graph.invoke(initial_state)
+            
+            # Store the updated chat history
+            self.session_histories[request.session_id] = final_state["chat_history"]
+            
+            # Stream the response (in this case it's just one chunk, but could be adapted for true streaming)
+            yield final_state["response"]
+            
         except Exception as e:
             raise Exception(f"Error processing chat request: {str(e)}")
+
 
 # Create singleton instance
 chat_service = ChatService()
