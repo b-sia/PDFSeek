@@ -1,20 +1,34 @@
 import os
-from typing import Dict, Optional
+from typing import Dict, Optional, Literal
 
-from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.embeddings import HuggingFaceEmbeddings, OpenAIEmbeddings
 from langchain.vectorstores import FAISS
 
 from app.core.config import settings
 
 
 class VectorStore:
-    def __init__(self):
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
-        )
+    def __init__(self, embedding_type: Literal["huggingface", "openai"] = "huggingface"):
+        """Initialize the vector store with the specified embedding type.
+        
+        Args:
+            embedding_type: The type of embeddings to use ("huggingface" or "openai")
+        """
+        if embedding_type == "openai":
+            if not settings.OPENAI_API_KEY:
+                raise ValueError("OPENAI_API_KEY is not set in environment variables")
+            self.embeddings = OpenAIEmbeddings(
+                openai_api_key=settings.OPENAI_API_KEY
+            )
+        else:
+            self.embeddings = HuggingFaceEmbeddings(
+                model_name="sentence-transformers/all-MiniLM-L6-v2"
+            )
+        
         self.store_dir = settings.VECTOR_STORE_DIR
         self.stores: Dict[str, FAISS] = {}
         os.makedirs(self.store_dir, exist_ok=True)
+        self.embedding_type = embedding_type
 
     def get_store(self, doc_id: str) -> FAISS:
         """Get or create a vector store for a document."""
@@ -55,8 +69,8 @@ class VectorStore:
         if doc_id in self.stores:
             del self.stores[doc_id]
 
-# Create singleton instance
-vector_store = VectorStore()
+# Create singleton instance with default embedding type
+vector_store = VectorStore(embedding_type=settings.DEFAULT_EMBEDDING_TYPE if hasattr(settings, "DEFAULT_EMBEDDING_TYPE") else "huggingface")
 
 def get_vector_store() -> VectorStore:
     """Get the vector store singleton instance."""

@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     VECTOR_STORE_DIR: str = os.getenv("VECTOR_STORE_DIR", "./vector_store")
     CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", "1000"))
     CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "200"))
+    DEFAULT_EMBEDDING_TYPE: str = os.getenv("DEFAULT_EMBEDDING_TYPE", "huggingface")
 
     class Config:
         env_file = ".env"
