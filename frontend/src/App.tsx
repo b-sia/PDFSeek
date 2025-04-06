@@ -6,7 +6,7 @@ import { ModelConfigPanel } from './components/ModelConfigPanel';
 function App() {
   return (
     <ChakraProvider>
-      <Box h="100vh" p={4}>
+      <Box h="95vh" w="98vw" p={0}>
         <Grid
           templateColumns="300px 1fr"
           templateRows="1fr"
@@ -21,7 +21,7 @@ function App() {
               <FileUploader />
             </Box>
           </GridItem>
-          <GridItem>
+          <GridItem colSpan={1} w="100%">
             <Box p={4} bg="white" borderRadius="md" boxShadow="sm" h="100%">
               <ChatInterface />
             </Box>

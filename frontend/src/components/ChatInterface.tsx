@@ -76,7 +76,7 @@ export const ChatInterface = () => {
   };
 
   return (
-    <VStack h="100%" spacing={4}>
+    <VStack h="100%" w="100%" spacing={4} justify="space-between">
       <Box
         flex={1}
         w="100%"
@@ -84,11 +84,16 @@ export const ChatInterface = () => {
         p={4}
         bg="gray.50"
         borderRadius="md"
+        minH="calc(100vh - 200px)"
+        display="flex"
+        flexDirection="column"
+        flexGrow={1}
       >
         {messages.map((message: ChatMessage, index: number) => (
           <Flex
             key={index}
             mb={4}
+            w="100%"
             justify={message.role === 'user' ? 'flex-end' : 'flex-start'}
           >
             <Box
@@ -115,7 +120,7 @@ export const ChatInterface = () => {
       </Box>
 
       <form onSubmit={handleSubmit} style={{ width: '100%' }}>
-        <HStack>
+        <HStack w="100%">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
