@@ -37,3 +37,6 @@ launch.json
 backend/sessions/
 backend/vector_store/
 backend/logs/
+
+#miscellaneous files
+misc/
