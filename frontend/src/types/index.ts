@@ -7,7 +7,7 @@ export interface ModelConfig {
   n_ctx: number;
   gpu_layers: number;
   model_path?: string;
-  embedding_type?: 'huggingface' | 'openai';
+  embedding_type?: 'openai' | 'huggingface';
 }
 
 export interface ChatMessage {
