@@ -36,11 +36,17 @@ class VectorStore:
             
     def update_embeddings(self, embedding_type: str):
         """Update the embedding model if the type has changed"""
-        if embedding_type != self.embedding_type:
+        print(f"update_embeddings called with type: {embedding_type}, current type: {self.embedding_type}")
+        print(f"Embedding type type: {type(embedding_type)}, current type type: {type(self.embedding_type)}")
+        if str(embedding_type).strip() != str(self.embedding_type).strip():
+            print(f"Updating embeddings from {self.embedding_type} to {embedding_type}")
             self._create_embeddings(embedding_type)
             self.embedding_type = embedding_type
             # Clear the stores to ensure they use the new embeddings
             self.stores = {}
+            print(f"Embeddings updated successfully to {embedding_type}")
+        else:
+            print(f"No update needed, already using {embedding_type} embeddings")
 
     def get_store(self, doc_id: str) -> FAISS:
         """Get or create a vector store for a document."""

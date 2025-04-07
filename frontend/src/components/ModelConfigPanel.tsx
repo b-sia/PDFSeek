@@ -25,25 +25,21 @@ export const ModelConfigPanel = () => {
 
   const handleModelTypeChange = async (value: string) => {
     const modelType = value as 'openai' | 'local';
-    // Automatically set embedding type based on model type
-    const updatedConfig = { 
-      model_type: modelType,
-      embedding_type: modelType === 'openai' ? 'openai' as const : 'huggingface' as const
-    };
     
     // Update local state first
-    updateModelConfig(updatedConfig);
+    updateModelConfig({ model_type: modelType });
     
     // Immediately save the configuration to the backend
     try {
       setLoading(true);
       await configureModel({
         ...modelConfig,
-        ...updatedConfig
+        model_type: modelType
+        // Let the backend set the embedding_type automatically
       });
       toast({
         title: 'Model type updated',
-        description: `Changed to ${modelType} model with ${updatedConfig.embedding_type} embeddings`,
+        description: `Changed to ${modelType} model`,
         status: 'success',
         duration: 3000,
         isClosable: true,
