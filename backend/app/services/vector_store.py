@@ -1,5 +1,6 @@
 import os
 from typing import Dict, Optional, Literal
+from functools import lru_cache
 
 from langchain.embeddings import HuggingFaceEmbeddings, OpenAIEmbeddings
 from langchain.vectorstores import FAISS
@@ -15,22 +16,23 @@ class VectorStore:
         Args:
             embedding_type: The type of embeddings to use ("huggingface" or "openai")
         """
-        self._create_embeddings(embedding_type)
         self.store_dir = settings.VECTOR_STORE_DIR
         self.stores: Dict[str, FAISS] = {}
         os.makedirs(self.store_dir, exist_ok=True)
         self.embedding_type = embedding_type
+        self.embeddings = self._create_embeddings(embedding_type)
 
+    @lru_cache(maxsize=2)
     def _create_embeddings(self, embedding_type: str):
-        """Create embedding model based on the specified type"""
+        """Create embedding model based on the specified type with caching"""
         if embedding_type == "openai":
             if not settings.OPENAI_API_KEY:
                 raise ValueError("OPENAI_API_KEY is not set in environment variables")
-            self.embeddings = OpenAIEmbeddings(
+            return OpenAIEmbeddings(
                 openai_api_key=settings.OPENAI_API_KEY
             )
         else:
-            self.embeddings = HuggingFaceEmbeddings(
+            return HuggingFaceEmbeddings(
                 model_name="sentence-transformers/all-MiniLM-L6-v2"
             )
             
@@ -40,10 +42,11 @@ class VectorStore:
         print(f"Embedding type type: {type(embedding_type)}, current type type: {type(self.embedding_type)}")
         if str(embedding_type).strip() != str(self.embedding_type).strip():
             print(f"Updating embeddings from {self.embedding_type} to {embedding_type}")
-            self._create_embeddings(embedding_type)
+            self.embeddings = self._create_embeddings(embedding_type)
             self.embedding_type = embedding_type
-            # Clear the stores to ensure they use the new embeddings
-            self.stores = {}
+            # Only clear stores if we're actually changing embedding types
+            if self.embedding_type != embedding_type:
+                self.stores = {}
             print(f"Embeddings updated successfully to {embedding_type}")
         else:
             print(f"No update needed, already using {embedding_type} embeddings")
