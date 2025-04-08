@@ -136,8 +136,11 @@ class ChatService:
             else:
                 # For non-ChatOpenAI models that expect a formatted string
                 template = """
-                You are a helpful assistant. Answer the user's question based on the following context:
+                You are a helpful assistant. Answer the user's question based on the following context.
+                Please format your response in a clear, well-structured manner with proper paragraphs and line breaks.
+                Do not include any code blocks or special formatting unless specifically requested.
                 
+                Context:
                 {context}
                 
                 Chat history:
