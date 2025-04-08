@@ -104,7 +104,7 @@ export const ChatInterface = () => {
               borderRadius="lg"
               boxShadow="sm"
             >
-              <Text>{message.content}</Text>
+              <Text whiteSpace="pre-wrap">{message.content}</Text>
               {message.sources && (
                 <Box mt={2} fontSize="sm" color="gray.500">
                   <Text fontWeight="bold">Sources:</Text>
