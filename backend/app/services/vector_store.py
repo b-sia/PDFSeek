@@ -33,7 +33,8 @@ class VectorStore:
             )
         else:
             return HuggingFaceEmbeddings(
-                model_name="sentence-transformers/all-MiniLM-L6-v2"
+                model_name="Alibaba-NLP/gte-large-en-v1.5",
+                model_kwargs={"trust_remote_code": True}
             )
             
     def update_embeddings(self, embedding_type: str):
