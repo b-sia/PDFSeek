@@ -11,6 +11,7 @@ from langchain_community.llms import LlamaCpp
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from app.core.config import settings
 from app.models.chat import ChatRequest, ChatResponse
@@ -43,6 +44,27 @@ class ChatService:
         self.graph = self._build_conversation_graph()
         # Session storage for chat histories
         self.session_histories: Dict[str, List[Any]] = {}
+        # Cache for loaded models
+        self._model_cache = {}
+
+    def _infer_model_type_from_path(self, model_path: str) -> str:
+        """Infer the model type from the file extension.
+        
+        Args:
+            model_path: Path to the model file
+            
+        Returns:
+            str: The inferred model type ("llama", "safetensors", or "pytorch")
+        """
+        ext = os.path.splitext(model_path)[1].lower()
+        if ext == '.gguf':
+            return "llama"
+        elif ext == '.safetensors':
+            return "safetensors"
+        elif ext in ['.pt', '.pth', '.bin']:
+            return "pytorch"
+        else:
+            raise ValueError(f"Unsupported model file extension: {ext}")
 
     def _get_llm(self, state: ChatState):
         """Get the appropriate LLM based on the state."""
@@ -56,16 +78,62 @@ class ChatService:
         elif state.model_type == "local":
             if not state.model_path:
                 raise ValueError("No local model file available. Please upload a model first or select OpenAI model type.")
-            return LlamaCpp(
-                model_path=state.model_path,
-                temperature=settings.DEFAULT_TEMPERATURE,
-                max_tokens=settings.DEFAULT_MAX_TOKENS,
-                top_p=settings.DEFAULT_TOP_P,
-                repeat_penalty=settings.DEFAULT_REPEAT_PENALTY,
-                n_ctx=settings.DEFAULT_N_CTX,
-                n_gpu_layers=settings.DEFAULT_GPU_LAYERS,
-                streaming=True
-            )
+            
+            # Check if model is already loaded in cache
+            if state.model_path in self._model_cache:
+                return self._model_cache[state.model_path]
+            
+            # Infer model type from file extension
+            model_type = self._infer_model_type_from_path(state.model_path)
+            
+            if model_type == "llama":
+                # Use LlamaCpp for GGUF models
+                llm = LlamaCpp(
+                    model_path=state.model_path,
+                    temperature=settings.DEFAULT_TEMPERATURE,
+                    max_tokens=settings.DEFAULT_MAX_TOKENS,
+                    top_p=settings.DEFAULT_TOP_P,
+                    repeat_penalty=settings.DEFAULT_REPEAT_PENALTY,
+                    n_ctx=settings.DEFAULT_N_CTX,
+                    n_gpu_layers=settings.DEFAULT_GPU_LAYERS,
+                    streaming=True
+                )
+            elif model_type in ["safetensors", "pytorch"]:
+                # Use HuggingFace models for safetensors and pytorch models
+                from langchain_community.llms import HuggingFacePipeline
+                from transformers import pipeline
+                
+                # Load model and tokenizer
+                model = AutoModelForCausalLM.from_pretrained(
+                    state.model_path,
+                    trust_remote_code=True,
+                    local_files_only=True
+                )
+                tokenizer = AutoTokenizer.from_pretrained(
+                    state.model_path,
+                    trust_remote_code=True,
+                    local_files_only=True
+                )
+                
+                # Create text generation pipeline
+                pipe = pipeline(
+                    "text-generation",
+                    model=model,
+                    tokenizer=tokenizer,
+                    max_length=settings.DEFAULT_MAX_TOKENS,
+                    temperature=settings.DEFAULT_TEMPERATURE,
+                    top_p=settings.DEFAULT_TOP_P,
+                    repetition_penalty=settings.DEFAULT_REPEAT_PENALTY
+                )
+                
+                # Create LangChain wrapper
+                llm = HuggingFacePipeline(pipeline=pipe)
+            else:
+                raise ValueError(f"Unsupported model type: {model_type}")
+            
+            # Cache the model for future use
+            self._model_cache[state.model_path] = llm
+            return llm
         else:
             raise ValueError(f"Unsupported model type: {state.model_type}")
 
@@ -152,12 +220,34 @@ class ChatService:
                 """
                 
                 # Get response - handle differently for non-chat models
-                response = llm.invoke(template.format(
-                    context=context,
-                    chat_history=formatted_history,
-                    question=state.question
-                ))
-                answer = response
+                try:
+                    # Try using the invoke method first (for newer LangChain versions)
+                    response = llm.invoke(template.format(
+                        context=context,
+                        chat_history=formatted_history,
+                        question=state.question
+                    ))
+                    
+                    # Handle different response formats
+                    if isinstance(response, str):
+                        answer = response
+                    elif hasattr(response, 'content'):
+                        answer = response.content
+                    else:
+                        # Try to extract text from the response
+                        answer = str(response)
+                except Exception as e:
+                    # Fallback for older LangChain versions or different model types
+                    try:
+                        # Try using the __call__ method
+                        response = llm(template.format(
+                            context=context,
+                            chat_history=formatted_history,
+                            question=state.question
+                        ))
+                        answer = str(response)
+                    except Exception as inner_e:
+                        raise Exception(f"Failed to generate response: {str(inner_e)}")
             
             # Add assistant message to history
             state.chat_history.append(AIMessage(content=answer))
@@ -211,9 +301,14 @@ class ChatService:
                     model_path = config['model_path']
                 # Find a default model
                 else:
-                    # Use the first GGUF file found in the model directory as default
-                    model_files = [f for f in os.listdir(settings.MODEL_DIR) if f.endswith('.gguf')]
+                    # Look for any supported model file in the model directory
+                    model_files = []
+                    for ext in ['.gguf', '.safetensors', '.bin', '.pt', '.pth']:
+                        model_files.extend([f for f in os.listdir(settings.MODEL_DIR) if f.endswith(ext)])
+                    
                     if model_files:
+                        # Sort by extension priority (prefer GGUF for LLM, safetensors for embeddings)
+                        model_files.sort(key=lambda x: os.path.splitext(x)[1].lower())
                         model_path = os.path.join(settings.MODEL_DIR, model_files[0])
                     else:
                         raise ValueError("No local model files found. Please upload a model first.")

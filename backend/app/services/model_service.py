@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 from app.core.config import settings
 
@@ -17,6 +17,7 @@ class ModelService:
             "gpu_layers": settings.DEFAULT_GPU_LAYERS,
             "embedding_type": settings.DEFAULT_EMBEDDING_TYPE
         }
+        self.supported_extensions = ['.gguf', '.safetensors', '.bin', '.pt', '.pth']
 
     def update_config(self, config: Dict) -> Dict:
         """
@@ -71,10 +72,40 @@ class ModelService:
         """
         return self.current_config
 
+    def _validate_model_file(self, filename: str) -> None:
+        """
+        Validate that the model file has a supported extension.
+        
+        Args:
+            filename: Name of the model file
+            
+        Raises:
+            ValueError: If the file extension is not supported
+        """
+        ext = os.path.splitext(filename)[1].lower()
+        if ext not in self.supported_extensions:
+            raise ValueError(
+                f"Unsupported model file extension: {ext}. "
+                f"Supported extensions are: {', '.join(self.supported_extensions)}"
+            )
+
     def upload_local_model(self, model_file: bytes, filename: str) -> str:
         """
         Upload and save a local LLM model file.
+        
+        Args:
+            model_file: The model file bytes
+            filename: Name of the model file
+            
+        Returns:
+            str: Path to the saved model file
+            
+        Raises:
+            ValueError: If the file extension is not supported
         """
+        # Validate file extension
+        self._validate_model_file(filename)
+        
         if not os.path.exists(self.model_dir):
             os.makedirs(self.model_dir)
 
