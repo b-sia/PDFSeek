@@ -36,9 +36,10 @@ async def process_pdfs(files: List[UploadFile]) -> Dict[str, any]:
 
             # Add all text chunks to vector store in a single operation if there's content
             if all_text_chunks:
-                store = vector_store.get_store(doc_id)
-                store.add_texts(all_text_chunks)
-                store.save_local(os.path.join(vector_store.store_dir, f"{doc_id}.faiss"))
+                # Use the new add_texts method for better handling of chunks
+                vector_store.add_texts(doc_id, all_text_chunks)
+                if settings.DEBUG:
+                    print(f"Processed PDF {file.filename} with {len(all_text_chunks)} text chunks")
 
             document_ids.append(doc_id)
             file.file.close()

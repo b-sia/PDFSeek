@@ -2,6 +2,7 @@ import os
 from typing import Dict, Optional, List
 
 from app.core.config import settings
+from app.services.vector_store import get_vector_store
 
 
 class ModelService:
@@ -18,6 +19,9 @@ class ModelService:
             "embedding_type": settings.DEFAULT_EMBEDDING_TYPE
         }
         self.supported_extensions = ['.gguf', '.safetensors', '.bin', '.pt', '.pth']
+        
+        # Initialize vector store with self as the model service
+        self.vector_store = get_vector_store(self)
 
     def update_config(self, config: Dict) -> Dict:
         """
@@ -28,10 +32,18 @@ class ModelService:
             print(f"update_config called with: {config}")
             print(f"Current config before update: {self.current_config}")
         
+        # Track if we need to update embeddings
+        should_update_embeddings = False
+        
         # Validate and update configuration
         if "model_type" in config and config["model_type"] is not None:
             if config["model_type"] not in ["openai", "local"]:
                 raise ValueError("Invalid model type. Must be 'openai' or 'local'")
+            
+            # Check if model type is changing
+            if config["model_type"] != self.current_config["model_type"]:
+                should_update_embeddings = True
+            
             self.current_config["model_type"] = config["model_type"]
             
             # Automatically set embedding type based on model type if not explicitly provided
@@ -60,10 +72,20 @@ class ModelService:
         if "embedding_type" in config and config["embedding_type"] is not None:
             if config["embedding_type"] not in ["huggingface", "openai"]:
                 raise ValueError("Invalid embedding type. Must be 'huggingface' or 'openai'")
+            # Check if embedding type is changing
+            if config["embedding_type"] != self.current_config["embedding_type"]:
+                should_update_embeddings = True
             self.current_config["embedding_type"] = config["embedding_type"]
 
         if settings.DEBUG:
             print(f"Final config after update: {self.current_config}")
+        
+        # Update vector store embeddings if needed
+        if should_update_embeddings:
+            if settings.DEBUG:
+                print("Model type or embedding type changed, updating vector store embeddings")
+            self.vector_store.update_embeddings(self.current_config["embedding_type"])
+        
         return self.current_config
 
     def get_config(self) -> Dict:
