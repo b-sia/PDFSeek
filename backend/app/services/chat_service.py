@@ -170,6 +170,47 @@ class ChatService:
             # No documents or no relevant results
             return {"retrieved_docs": []}
         
+        def _remove_repeating_sentences(text: str) -> str:
+            """Remove repeating sentences from the text.
+            
+            Args:
+                text: The input text that may contain repeating sentences
+                
+            Returns:
+                str: The text with repeating sentences removed
+            """
+            # Split text into sentences (handling common sentence endings)
+            sentences = []
+            current = ""
+            
+            # Split by newlines first to handle paragraph breaks
+            paragraphs = text.split('\n')
+            for paragraph in paragraphs:
+                # Split by common sentence endings
+                parts = paragraph.split('. ')
+                for i, part in enumerate(parts):
+                    if i < len(parts) - 1:
+                        current += part + '. '
+                    else:
+                        current += part
+                
+                if current.strip():
+                    sentences.append(current.strip())
+                current = ""
+            
+            # Remove duplicates while preserving order
+            seen = set()
+            unique_sentences = []
+            for sentence in sentences:
+                # Normalize sentence for comparison (remove extra whitespace)
+                normalized = ' '.join(sentence.split())
+                if normalized not in seen:
+                    seen.add(normalized)
+                    unique_sentences.append(sentence)
+            
+            # Join sentences back together with proper spacing
+            return '\n\n'.join(unique_sentences)
+        
         def generate_response(state: ChatState):
             """Generate a response using the LLM."""
             llm = self._get_llm(state)
@@ -248,6 +289,9 @@ class ChatService:
                         answer = str(response)
                     except Exception as inner_e:
                         raise Exception(f"Failed to generate response: {str(inner_e)}")
+            
+            # Remove repeating sentences from the answer
+            answer = _remove_repeating_sentences(answer)
             
             # Add assistant message to history
             state.chat_history.append(AIMessage(content=answer))
