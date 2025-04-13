@@ -35,7 +35,7 @@ class VectorStore:
             )
         else:
             return HuggingFaceEmbeddings(
-                model_name="Alibaba-NLP/gte-large-en-v1.5",
+                model_name="sentence-transformers/all-MiniLM-L6-v2",
                 model_kwargs={"trust_remote_code": True}
             )
             
@@ -131,8 +131,6 @@ class VectorStore:
             return
             
         try:
-            store = self.get_store(doc_id)
-            
             # Filter out empty texts
             valid_texts = [text for text in texts if text and text.strip()]
             
@@ -141,7 +139,8 @@ class VectorStore:
                     print(f"No valid texts found for document {doc_id}")
                 return
                 
-            # Create Document objects with metadata
+            store = self.get_store(doc_id)
+
             docs = [
                 Document(
                     page_content=text,
@@ -150,7 +149,6 @@ class VectorStore:
                 for i, text in enumerate(valid_texts)
             ]
             
-            # Add the documents to the store
             store.add_documents(docs)
             
             # Save the updated store
