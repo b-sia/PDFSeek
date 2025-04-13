@@ -22,6 +22,7 @@ async def process_pdfs(files: List[UploadFile]) -> Dict[str, any]:
         try:
             # Generate unique document ID
             doc_id = str(uuid.uuid4())
+            document_ids.append(doc_id)
             
             # Read PDF content
             pdf_reader = PdfReader(file.file)
@@ -36,12 +37,14 @@ async def process_pdfs(files: List[UploadFile]) -> Dict[str, any]:
 
             # Add all text chunks to vector store in a single operation if there's content
             if all_text_chunks:
-                # Use the new add_texts method for better handling of chunks
+                # Use the add_texts method for better handling of chunks
                 vector_store.add_texts(doc_id, all_text_chunks)
                 if settings.DEBUG:
                     print(f"Processed PDF {file.filename} with {len(all_text_chunks)} text chunks")
+            else:
+                if settings.DEBUG:
+                    print(f"No text content found in PDF {file.filename}")
 
-            document_ids.append(doc_id)
             file.file.close()
 
         except Exception as e:
