@@ -211,6 +211,23 @@ class ChatService:
             # Join sentences back together with proper spacing
             return '\n\n'.join(unique_sentences)
         
+        def _convert_newlines(text: str) -> str:
+            """Convert escaped newlines to actual newlines.
+            
+            Args:
+                text: The input text that may contain escaped newlines
+                
+            Returns:
+                str: The text with proper newlines
+            """
+            # Replace escaped newlines with actual newlines
+            text = text.replace('\\n', '\n')
+            # Handle double newlines
+            text = text.replace('\n\n', '\n')
+            # Remove any trailing newlines
+            text = text.rstrip('\n')
+            return text
+        
         def generate_response(state: ChatState):
             """Generate a response using the LLM."""
             llm = self._get_llm(state)
@@ -289,6 +306,9 @@ class ChatService:
                         answer = str(response)
                     except Exception as inner_e:
                         raise Exception(f"Failed to generate response: {str(inner_e)}")
+            
+            # Convert escaped newlines to actual newlines
+            answer = _convert_newlines(answer)
             
             # Remove repeating sentences from the answer
             answer = _remove_repeating_sentences(answer)
@@ -408,4 +428,5 @@ async def process_chat_request(request: ChatRequest) -> AsyncGenerator[str, None
     Entry point function that uses the singleton instance.
     """
     async for chunk in chat_service.process_chat_request(request):
+        # Convert newlines in the chunk before yielding
         yield chunk 
