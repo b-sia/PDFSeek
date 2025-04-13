@@ -307,11 +307,9 @@ class ChatService:
                     except Exception as inner_e:
                         raise Exception(f"Failed to generate response: {str(inner_e)}")
             
-            # Convert escaped newlines to actual newlines
             answer = _convert_newlines(answer)
-            
-            # Remove repeating sentences from the answer
             answer = _remove_repeating_sentences(answer)
+            answer = self._filter_model_metadata(answer)
             
             # Add assistant message to history
             state.chat_history.append(AIMessage(content=answer))
@@ -417,6 +415,38 @@ class ChatService:
             model_path=model_path,  # This can be None now
             embedding_type=config["embedding_type"]
         )
+
+    def _filter_model_metadata(self, text: str) -> str:
+        """Filter out model-specific metadata tokens from the text.
+        
+        Args:
+            text: The input text that may contain model metadata
+            
+        Returns:
+            str: The text with metadata removed
+        """
+        # Common patterns to remove
+        patterns = [
+            r'end\s*$',  # "end" at the end of text
+            r'end\s*#\s*of\s*lines\s*$',  # "end # of lines"
+            r'#\s*of\s*words:\s*\d+\s*\(~.*?\)\s*$',  # "# of words: X (~Y)"
+            r'#\s*of\s*characters:\s*\d+\s*\(~.*?\)\s*$',  # "# of characters: X (~Y)"
+            r'#\s*of\s*unique\s*words:\s*\d+\s*\(~.*?\)\s*$',  # "# of unique words: X (~Y)"
+            r'\\end\{code\}\s*$',  # "\end{code}"
+            r'\\begin\{code\}\s*$',  # "\begin{code}"
+            r'\\section\*\s*\{[.\s]*\}\s*$',  # "\section* {....}" with any number of dots
+            r'\\section\*.*$',  # Any \section* command to the end of line
+            r'\{[\s.]*\}\s*$',  # Any {...} with only spaces and dots
+            r'[.\s]{50,}\s*$',  # Any long sequence of dots and spaces (50+ characters)
+        ]
+        
+        import re
+        for pattern in patterns:
+            text = re.sub(pattern, '', text, flags=re.MULTILINE)
+        
+        # Remove any trailing whitespace
+        text = text.rstrip()
+        return text
 
 
 # Create singleton instance
