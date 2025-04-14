@@ -17,6 +17,7 @@ from app.core.config import settings
 from app.models.chat import ChatRequest, ChatResponse
 from app.services.model_service import model_service
 from app.services.vector_store import get_vector_store
+from app.services.text_postprocessing import postprocess_text
 
 
 class ChatState(BaseModel):
@@ -170,64 +171,6 @@ class ChatService:
             # No documents or no relevant results
             return {"retrieved_docs": []}
         
-        def _remove_repeating_sentences(text: str) -> str:
-            """Remove repeating sentences from the text.
-            
-            Args:
-                text: The input text that may contain repeating sentences
-                
-            Returns:
-                str: The text with repeating sentences removed
-            """
-            # Split text into sentences (handling common sentence endings)
-            sentences = []
-            current = ""
-            
-            # Split by newlines first to handle paragraph breaks
-            paragraphs = text.split('\n')
-            for paragraph in paragraphs:
-                # Split by common sentence endings
-                parts = paragraph.split('. ')
-                for i, part in enumerate(parts):
-                    if i < len(parts) - 1:
-                        current += part + '. '
-                    else:
-                        current += part
-                
-                if current.strip():
-                    sentences.append(current.strip())
-                current = ""
-            
-            # Remove duplicates while preserving order
-            seen = set()
-            unique_sentences = []
-            for sentence in sentences:
-                # Normalize sentence for comparison (remove extra whitespace)
-                normalized = ' '.join(sentence.split())
-                if normalized not in seen:
-                    seen.add(normalized)
-                    unique_sentences.append(sentence)
-            
-            # Join sentences back together with proper spacing
-            return '\n\n'.join(unique_sentences)
-        
-        def _convert_newlines(text: str) -> str:
-            """Convert escaped newlines to actual newlines.
-            
-            Args:
-                text: The input text that may contain escaped newlines
-                
-            Returns:
-                str: The text with proper newlines
-            """
-            # Replace escaped newlines with actual newlines
-            text = text.replace('\\n', '\n')
-            # Handle double newlines
-            text = text.replace('\n\n', '\n')
-            # Remove any trailing newlines
-            text = text.rstrip('\n')
-            return text
-        
         def generate_response(state: ChatState):
             """Generate a response using the LLM."""
             llm = self._get_llm(state)
@@ -307,9 +250,8 @@ class ChatService:
                     except Exception as inner_e:
                         raise Exception(f"Failed to generate response: {str(inner_e)}")
             
-            answer = _convert_newlines(answer)
-            answer = _remove_repeating_sentences(answer)
-            answer = self._filter_model_metadata(answer)
+            # Apply postprocessing to the answer
+            answer = postprocess_text(answer)
             
             # Add assistant message to history
             state.chat_history.append(AIMessage(content=answer))
@@ -415,38 +357,6 @@ class ChatService:
             model_path=model_path,  # This can be None now
             embedding_type=config["embedding_type"]
         )
-
-    def _filter_model_metadata(self, text: str) -> str:
-        """Filter out model-specific metadata tokens from the text.
-        
-        Args:
-            text: The input text that may contain model metadata
-            
-        Returns:
-            str: The text with metadata removed
-        """
-        # Common patterns to remove
-        patterns = [
-            r'end\s*$',  # "end" at the end of text
-            r'end\s*#\s*of\s*lines\s*$',  # "end # of lines"
-            r'#\s*of\s*words:\s*\d+\s*\(~.*?\)\s*$',  # "# of words: X (~Y)"
-            r'#\s*of\s*characters:\s*\d+\s*\(~.*?\)\s*$',  # "# of characters: X (~Y)"
-            r'#\s*of\s*unique\s*words:\s*\d+\s*\(~.*?\)\s*$',  # "# of unique words: X (~Y)"
-            r'\\end\{code\}\s*$',  # "\end{code}"
-            r'\\begin\{code\}\s*$',  # "\begin{code}"
-            r'\\section\*\s*\{[.\s]*\}\s*$',  # "\section* {....}" with any number of dots
-            r'\\section\*.*$',  # Any \section* command to the end of line
-            r'\{[\s.]*\}\s*$',  # Any {...} with only spaces and dots
-            r'[.\s]{50,}\s*$',  # Any long sequence of dots and spaces (50+ characters)
-        ]
-        
-        import re
-        for pattern in patterns:
-            text = re.sub(pattern, '', text, flags=re.MULTILINE)
-        
-        # Remove any trailing whitespace
-        text = text.rstrip()
-        return text
 
 
 # Create singleton instance
