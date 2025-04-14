@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { ChatState, ChatMessage, PDFMetadata, ModelConfig } from '../types';
 
 const initialState: ChatState = {
@@ -18,37 +19,57 @@ const initialState: ChatState = {
   error: null,
 };
 
-export const useStore = create<ChatState & {
+type StoreState = ChatState & {
   addMessage: (message: ChatMessage) => void;
   setDocuments: (documents: PDFMetadata[]) => void;
   updateModelConfig: (config: Partial<ModelConfig>) => void;
   setLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
-}>((set) => ({
-  ...initialState,
-  
-  addMessage: (message) =>
-    set((state) => ({
-      messages: [...state.messages, message],
-    })),
-    
-  setDocuments: (documents) =>
-    set(() => ({
-      documents,
-    })),
-    
-  updateModelConfig: (config) =>
-    set((state) => ({
-      modelConfig: { ...state.modelConfig, ...config },
-    })),
-    
-  setLoading: (isLoading) =>
-    set(() => ({
-      isLoading,
-    })),
-    
-  setError: (error) =>
-    set(() => ({
-      error,
-    })),
-}));
+  clearMessages: () => void;
+};
+
+export const useStore = create<StoreState>()(
+  persist(
+    (set) => ({
+      ...initialState,
+      
+      addMessage: (message) =>
+        set((state) => ({
+          messages: [...state.messages, message],
+        })),
+        
+      setDocuments: (documents) =>
+        set(() => ({
+          documents,
+        })),
+        
+      updateModelConfig: (config) =>
+        set((state) => ({
+          modelConfig: { ...state.modelConfig, ...config },
+        })),
+        
+      setLoading: (isLoading) =>
+        set(() => ({
+          isLoading,
+        })),
+        
+      setError: (error) =>
+        set(() => ({
+          error,
+        })),
+
+      clearMessages: () =>
+        set(() => ({
+          messages: [],
+        })),
+    }),
+    {
+      name: 'chat-storage',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        messages: state.messages,
+        modelConfig: state.modelConfig,
+      }),
+    }
+  )
+);

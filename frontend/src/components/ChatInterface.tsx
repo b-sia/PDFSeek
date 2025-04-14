@@ -7,24 +7,29 @@ import {
   Button,
   Text,
   Flex,
+  useToast,
 } from '@chakra-ui/react';
-import { useToast } from '@chakra-ui/toast';
 import { useStore } from '../store/useStore';
 import { streamChat } from '../api/api';
 import { ChatMessage } from '../types';
 
 export const ChatInterface = () => {
-  const { messages, documents, modelConfig, isLoading, addMessage, setLoading, setError } = useStore();
+  const { messages, documents, modelConfig, isLoading, addMessage, setLoading, setError, clearMessages } = useStore();
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
+  // Clear chat history on component mount (page refresh)
   useEffect(() => {
-    scrollToBottom();
+    clearMessages();
+  }, []);
+
+  // Scroll to bottom whenever messages change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,6 +42,7 @@ export const ChatInterface = () => {
       timestamp: new Date(),
     };
 
+    // Add user message to history
     addMessage(userMessage);
     setInput('');
     setLoading(true);
@@ -52,7 +58,12 @@ export const ChatInterface = () => {
           // Update the last message if it's from assistant, or create new one
           const lastMessage = messages[messages.length - 1];
           if (lastMessage?.role === 'assistant') {
-            lastMessage.content = assistantMessage;
+            // Create a new message object to trigger state update
+            const updatedMessage: ChatMessage = {
+              ...lastMessage,
+              content: assistantMessage,
+            };
+            addMessage(updatedMessage);
           } else {
             addMessage({
               role: 'assistant',
@@ -78,6 +89,7 @@ export const ChatInterface = () => {
   return (
     <VStack h="100%" w="100%" spacing={4} justify="space-between">
       <Box
+        ref={chatContainerRef}
         flex={1}
         w="100%"
         overflowY="auto"
@@ -85,9 +97,26 @@ export const ChatInterface = () => {
         bg="gray.50"
         borderRadius="md"
         minH="calc(100vh - 200px)"
+        maxH="calc(100vh - 200px)"
         display="flex"
         flexDirection="column"
         flexGrow={1}
+        css={{
+          '&::-webkit-scrollbar': {
+            width: '4px',
+          },
+          '&::-webkit-scrollbar-track': {
+            width: '6px',
+            background: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: 'gray.300',
+            borderRadius: '24px',
+          },
+          '&::-webkit-scrollbar-thumb:hover': {
+            background: 'gray.400',
+          },
+        }}
       >
         {messages.map((message: ChatMessage, index: number) => (
           <Flex
