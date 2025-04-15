@@ -10,6 +10,9 @@ import {
   Button,
   Collapse,
   Text,
+  Box,
+  HStack,
+  Progress,
 } from '@chakra-ui/react';
 import { FormControl, FormLabel } from '@chakra-ui/form-control';
 import { useToast } from '@chakra-ui/toast';
@@ -21,6 +24,8 @@ export const ModelConfigPanel = () => {
   const { modelConfig, updateModelConfig, setLoading, setError } = useStore();
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [_, setLocalModelFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
   const toast = useToast();
 
   const handleModelTypeChange = async (value: string) => {
@@ -63,8 +68,12 @@ export const ModelConfigPanel = () => {
 
     setLocalModelFile(file);
     try {
+      setIsUploading(true);
+      setUploadProgress(0);
       setLoading(true);
-      const modelPath = await uploadLocalModel(file);
+      const modelPath = await uploadLocalModel(file, (progress) => {
+        setUploadProgress(progress);
+      });
       updateModelConfig({ model_path: modelPath });
       toast({
         title: 'Model uploaded successfully',
@@ -81,6 +90,8 @@ export const ModelConfigPanel = () => {
       });
     } finally {
       setLoading(false);
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -131,8 +142,18 @@ export const ModelConfigPanel = () => {
             type="file"
             accept=".gguf,.safetensors,.bin,.pt"
             onChange={handleLocalModelUpload}
+            disabled={isUploading}
           />
-          {modelConfig.model_path && (
+          {isUploading && (
+            <Box mt={2}>
+              <HStack justify="space-between" mb={1}>
+                <Text fontSize="sm">Upload Progress</Text>
+                <Text fontSize="sm">{Math.round(uploadProgress)}%</Text>
+              </HStack>
+              <Progress value={uploadProgress} size="sm" colorScheme="blue" />
+            </Box>
+          )}
+          {modelConfig.model_path && !isUploading && (
             <Text fontSize="sm" color="green.500" mt={2}>
               Using model: {modelConfig.model_path}
             </Text>

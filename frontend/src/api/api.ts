@@ -10,7 +10,10 @@ const api = axios.create({
   },
 });
 
-export const uploadPDFs = async (files: File[]): Promise<PDFMetadata[]> => {
+export const uploadPDFs = async (
+  files: File[],
+  onProgress?: (progress: number) => void
+): Promise<PDFMetadata[]> => {
   const formData = new FormData();
   files.forEach(file => formData.append('files', file));
   
@@ -18,6 +21,12 @@ export const uploadPDFs = async (files: File[]): Promise<PDFMetadata[]> => {
     const response = await api.post('/api/pdf/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total && onProgress) {
+          const progress = (progressEvent.loaded / progressEvent.total) * 100;
+          onProgress(progress);
+        }
       },
     });
     
@@ -39,13 +48,22 @@ export const configureModel = async (config: ModelConfig): Promise<void> => {
   await api.post('/api/model/configure', config);
 };
 
-export const uploadLocalModel = async (file: File): Promise<string> => {
+export const uploadLocalModel = async (
+  file: File,
+  onProgress?: (progress: number) => void
+): Promise<string> => {
   const formData = new FormData();
   formData.append('file', file);
   
   const response = await api.post('/api/model/upload-local', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
+    },
+    onUploadProgress: (progressEvent) => {
+      if (progressEvent.total && onProgress) {
+        const progress = (progressEvent.loaded / progressEvent.total) * 100;
+        onProgress(progress);
+      }
     },
   });
   
