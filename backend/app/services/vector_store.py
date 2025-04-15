@@ -79,7 +79,8 @@ class VectorStore:
             if os.path.exists(store_path):
                 self.stores[doc_id] = FAISS.load_local(
                     store_path,
-                    self.embeddings
+                    self.embeddings,
+                    allow_dangerous_deserialization=True
                 )
             else:
                 # Initialize with a dummy document to create the store
