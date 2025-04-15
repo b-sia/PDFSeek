@@ -68,8 +68,16 @@ export const useStore = create<StoreState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         messages: state.messages,
-        modelConfig: state.modelConfig,
+        modelConfig: {
+          ...state.modelConfig,
+          model_type: 'openai',
+        },
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.updateModelConfig({ model_type: 'openai' });
+        }
+      },
     }
   )
 );
