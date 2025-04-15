@@ -3,6 +3,7 @@ from typing import List
 
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
+from torch.cuda import is_available
 
 load_dotenv()
 
@@ -18,7 +19,7 @@ class Settings(BaseSettings):
     DEFAULT_TOP_P: float = float(os.getenv("DEFAULT_TOP_P", "0.95"))
     DEFAULT_REPEAT_PENALTY: float = float(os.getenv("DEFAULT_REPEAT_PENALTY", "1.2"))
     DEFAULT_N_CTX: int = int(os.getenv("DEFAULT_N_CTX", "4096"))
-    DEFAULT_GPU_LAYERS: int = int(os.getenv("DEFAULT_GPU_LAYERS", "-1"))
+    DEFAULT_GPU_LAYERS: int = int(os.getenv("DEFAULT_GPU_LAYERS", "0" if is_available() else "-1"))
 
     # Server Configuration
     HOST: str = os.getenv("HOST", "0.0.0.0")

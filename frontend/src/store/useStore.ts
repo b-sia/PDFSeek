@@ -12,7 +12,7 @@ const initialState: ChatState = {
     top_p: 0.95,
     repeat_penalty: 1.2,
     n_ctx: 4096,
-    gpu_layers: -1,
+    gpu_layers: 0,
     embedding_type: 'openai',
   },
   isLoading: false,
