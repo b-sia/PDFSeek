@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     DEBUG: bool = os.getenv("DEBUG", "True").lower() == "true"
 
     # CORS Configuration
-    ALLOWED_ORIGINS: List[str] = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+    ALLOWED_ORIGINS: List[str] = ["http://localhost:5173"]
 
     # Vector Store Configuration
     VECTOR_STORE_DIR: str = os.getenv("VECTOR_STORE_DIR", "./vector_store")
@@ -35,7 +35,4 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "200"))
     DEFAULT_EMBEDDING_TYPE: str = os.getenv("DEFAULT_EMBEDDING_TYPE", "openai")
 
-    class Config:
-        env_file = ".env"
-
-settings = Settings() 
+settings = Settings()
