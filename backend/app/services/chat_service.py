@@ -89,6 +89,7 @@ class ChatService:
             
             if model_type == "llama":
                 # Use LlamaCpp for GGUF models
+                print(f"Initializing LlamaCpp with GPU layers: {settings.DEFAULT_GPU_LAYERS}")
                 llm = LlamaCpp(
                     model_path=state.model_path,
                     temperature=settings.DEFAULT_TEMPERATURE,
@@ -97,26 +98,50 @@ class ChatService:
                     repeat_penalty=settings.DEFAULT_REPEAT_PENALTY,
                     n_ctx=settings.DEFAULT_N_CTX,
                     n_gpu_layers=settings.DEFAULT_GPU_LAYERS,
-                    streaming=True
+                    streaming=True,
+                    f16_kv=True,  # Enable half-precision for key/value cache
+                    use_mlock=True,  # Lock model in memory
+                    use_mmap=True,  # Use memory mapping for faster loading
+                    n_threads=1,  # Limit CPU threads to ensure GPU usage
+                    n_batch=512,  # Increase batch size for better GPU utilization
                 )
+                print(f"LlamaCpp initialized with GPU layers: {llm.n_gpu_layers}")
             elif model_type in ["safetensors", "pytorch"]:
                 # Use HuggingFace models for safetensors and pytorch models
                 from langchain_community.llms import HuggingFacePipeline
                 from transformers import pipeline
+                import torch
+                
+                # Debug CUDA availability
+                print(f"CUDA available: {torch.cuda.is_available()}")
+                if torch.cuda.is_available():
+                    print(f"CUDA device count: {torch.cuda.device_count()}")
+                    print(f"Current CUDA device: {torch.cuda.current_device()}")
+                    print(f"CUDA device name: {torch.cuda.get_device_name()}")
+                
+                # Set device based on CUDA availability
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+                print(f"Using device: {device}")
                 
                 # Load model and tokenizer
                 model = AutoModelForCausalLM.from_pretrained(
                     state.model_path,
                     trust_remote_code=True,
-                    local_files_only=True
+                    local_files_only=True,
+                    device_map="auto",  # Automatically handle device placement
+                    torch_dtype=torch.float16 if device == "cuda" else torch.float32,  # Use half precision on GPU
                 )
+                
+                # Debug model device placement
+                print(f"Model device: {next(model.parameters()).device}")
+                
                 tokenizer = AutoTokenizer.from_pretrained(
                     state.model_path,
                     trust_remote_code=True,
                     local_files_only=True
                 )
                 
-                # Create text generation pipeline
+                # Create text generation pipeline with explicit device placement
                 pipe = pipeline(
                     "text-generation",
                     model=model,
@@ -124,7 +149,8 @@ class ChatService:
                     max_length=settings.DEFAULT_MAX_TOKENS,
                     temperature=settings.DEFAULT_TEMPERATURE,
                     top_p=settings.DEFAULT_TOP_P,
-                    repetition_penalty=settings.DEFAULT_REPEAT_PENALTY
+                    repetition_penalty=settings.DEFAULT_REPEAT_PENALTY,
+                    device=device,  # Explicitly set device
                 )
                 
                 # Create LangChain wrapper

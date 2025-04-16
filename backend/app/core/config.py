@@ -7,6 +7,16 @@ from torch.cuda import is_available
 
 load_dotenv()
 
+# Debug CUDA environment
+print("CUDA Environment Check:")
+print(f"CUDA_VISIBLE_DEVICES: {os.getenv('CUDA_VISIBLE_DEVICES', 'Not set')}")
+print(f"CUDA available: {is_available()}")
+if is_available():
+    import torch
+    print(f"CUDA device count: {torch.cuda.device_count()}")
+    print(f"Current CUDA device: {torch.cuda.current_device()}")
+    print(f"CUDA device name: {torch.cuda.get_device_name()}")
+
 class Settings(BaseSettings):
     # OpenAI Configuration
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
@@ -19,7 +29,7 @@ class Settings(BaseSettings):
     DEFAULT_TOP_P: float = float(os.getenv("DEFAULT_TOP_P", "0.95"))
     DEFAULT_REPEAT_PENALTY: float = float(os.getenv("DEFAULT_REPEAT_PENALTY", "1.2"))
     DEFAULT_N_CTX: int = int(os.getenv("DEFAULT_N_CTX", "4096"))
-    DEFAULT_GPU_LAYERS: int = int(os.getenv("DEFAULT_GPU_LAYERS", "0" if is_available() else "-1"))
+    DEFAULT_GPU_LAYERS: int = int(os.getenv("DEFAULT_GPU_LAYERS", "32" if is_available() else "-1"))
 
     # Server Configuration
     HOST: str = os.getenv("HOST", "0.0.0.0")
