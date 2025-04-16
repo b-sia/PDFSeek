@@ -52,19 +52,37 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-2. Install dependencies:
+2. Install llama-cpp-python with appropriate GPU support:
+
+For CPU-only usage:
+```bash
+pip install llama-cpp-python
+```
+
+For CUDA GPU support (recommended for faster inference):
+```bash
+# Make sure you have CUDA toolkit installed
+CMAKE_ARGS="-DGGML_CUDA=on" pip install llama-cpp-python
+```
+
+For Metal GPU support (Apple Silicon):
+```bash
+CMAKE_ARGS="-DGGML_METAL=on" pip install llama-cpp-python
+```
+
+3. Install remaining dependencies:
 ```bash
 cd backend
 pip install -r requirements.txt
 ```
 
-3. Set up environment variables:
+4. Set up environment variables:
 ```bash
 cp .env.example .env
 # Edit .env with your OpenAI API key and other configurations
 ```
 
-4. Run the backend server:
+5. Run the backend server:
 ```bash
 uvicorn app.main:app --reload
 ```
