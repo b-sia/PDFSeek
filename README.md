@@ -120,6 +120,62 @@ http://localhost:8000/docs
 - `POST /api/model/configure`: Configure model parameters
 - `POST /api/model/upload-local`: Upload local LLM model
 
+## Usage Guide
+
+### Using OpenAI GPT-3.5
+
+1. Configure the model:
+   - In the web interface, select "OpenAI GPT-3.5" as the model type
+   - The application will automatically use OpenAI embeddings for document search
+   - No additional model upload is required
+
+2. Upload PDFs:
+   - Click the "Upload PDF" button or drag and drop PDF files
+   - Wait for the processing to complete
+   - You can upload multiple PDFs at once
+
+3. Start chatting:
+   - Type your questions in the chat interface
+   - The model will search through your uploaded documents and provide relevant answers
+   - Responses will include references to the source documents
+
+### Using Local LLMs
+
+1. Prepare your model:
+   - Supported formats: `.gguf`, `.safetensors`, `.bin`, `.pt`, `.pth`
+   - Recommended: Use GGUF format for best performance with llama.cpp
+
+2. Configure the model:
+   - In the web interface, select "Local LLM" as the model type
+   - Click "Upload Local Model" and select your model file
+   - The application will automatically use HuggingFace embeddings for document search
+
+3. Adjust model parameters (optional):
+   - Temperature: Controls randomness (0.1-2.0)
+   - Max Tokens: Maximum length of generated responses
+   - Top P: Controls diversity via nucleus sampling (0-1)
+   - Repeat Penalty: Reduces repetition (1.0-2.0)
+   - Context Length: Maximum context window size
+   - GPU Layers: Number of layers to offload to GPU (-1 for CPU only)
+
+4. Upload PDFs and chat:
+   - Follow the same steps as with OpenAI GPT-3.5
+   - Note that local models may have different performance characteristics
+   - Some models may work better with specific types of documents
+
+### Tips for Best Performance
+
+- For local LLMs:
+  - Use models quantized to 4-bit or 8-bit for better memory efficiency
+  - Adjust GPU layers based on your GPU memory capacity
+  - Start with a smaller context length if experiencing memory issues
+  - Use models fine-tuned for instruction following for better chat performance
+
+- For OpenAI GPT-3.5:
+  - Keep API key secure and monitor usage
+  - Consider using streaming responses for better user experience
+  - Break down complex questions into smaller parts if needed
+
 ## Development
 
 ### Backend Development
