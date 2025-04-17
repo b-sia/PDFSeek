@@ -120,8 +120,9 @@ export const ModelConfigPanel = () => {
   return (
     <VStack spacing={4} align="stretch">
       <FormControl>
-        <FormLabel>Model Type</FormLabel>
+        <FormLabel htmlFor="model-type">Model Type</FormLabel>
         <Select
+          id="model-type"
           value={modelConfig.model_type}
           onChange={(e: any) => handleModelTypeChange(e.target.value)}
         >
@@ -137,12 +138,15 @@ export const ModelConfigPanel = () => {
 
       {modelConfig.model_type === 'local' && (
         <FormControl>
-          <FormLabel>Upload Local Model</FormLabel>
+          <FormLabel htmlFor="model-upload">Upload Local Model</FormLabel>
           <input
+            id="model-upload"
             type="file"
             accept=".gguf,.safetensors,.bin,.pt"
             onChange={handleLocalModelUpload}
             disabled={isUploading}
+            aria-label="Upload Local Model"
+            data-testid="model-upload-input"
           />
           {isUploading && (
             <Box mt={2}>
@@ -168,8 +172,9 @@ export const ModelConfigPanel = () => {
       <Collapse in={showAdvanced}>
         <VStack spacing={4} align="stretch">
           <FormControl>
-            <FormLabel>Temperature</FormLabel>
+            <FormLabel htmlFor="temperature">Temperature</FormLabel>
             <NumberInput
+              id="temperature"
               value={modelConfig.temperature}
               onChange={(_: any, value: any) => updateModelConfig({ temperature: value })}
               min={0}
@@ -185,8 +190,9 @@ export const ModelConfigPanel = () => {
           </FormControl>
 
           <FormControl>
-            <FormLabel>Max Tokens</FormLabel>
+            <FormLabel htmlFor="max-tokens">Max Tokens</FormLabel>
             <NumberInput
+              id="max-tokens"
               value={modelConfig.max_tokens}
               onChange={(_: any, value: any) => updateModelConfig({ max_tokens: value })}
               min={100}
@@ -202,8 +208,9 @@ export const ModelConfigPanel = () => {
           </FormControl>
 
           <FormControl>
-            <FormLabel>Top P</FormLabel>
+            <FormLabel htmlFor="top-p">Top P</FormLabel>
             <NumberInput
+              id="top-p"
               value={modelConfig.top_p}
               onChange={(_: any, value: any) => updateModelConfig({ top_p: value })}
               min={0}
@@ -219,8 +226,9 @@ export const ModelConfigPanel = () => {
           </FormControl>
 
           <FormControl>
-            <FormLabel>Repeat Penalty</FormLabel>
+            <FormLabel htmlFor="repeat-penalty">Repeat Penalty</FormLabel>
             <NumberInput
+              id="repeat-penalty"
               value={modelConfig.repeat_penalty}
               onChange={(_: any, value: any) => updateModelConfig({ repeat_penalty: value })}
               min={0}
@@ -236,8 +244,9 @@ export const ModelConfigPanel = () => {
           </FormControl>
 
           <FormControl>
-            <FormLabel>Context Length</FormLabel>
+            <FormLabel htmlFor="context-length">Context Length</FormLabel>
             <NumberInput
+              id="context-length"
               value={modelConfig.n_ctx}
               onChange={(_: any, value: any) => updateModelConfig({ n_ctx: value })}
               min={1}
@@ -253,8 +262,9 @@ export const ModelConfigPanel = () => {
           </FormControl>
 
           <FormControl>
-            <FormLabel>GPU Layers</FormLabel>
+            <FormLabel htmlFor="gpu-layers">GPU Layers</FormLabel>
             <NumberInput
+              id="gpu-layers"
               value={modelConfig.gpu_layers}
               onChange={(_: any, value: any) => updateModelConfig({ gpu_layers: value })}
               min={-1}
