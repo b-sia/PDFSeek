@@ -3,9 +3,11 @@ import os
 import uuid
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
+import logging
 
 from app.core.config import settings
 
+logger = logging.getLogger(__name__)
 
 class SessionService:
     def __init__(self):
@@ -20,6 +22,32 @@ class SessionService:
         """
         return os.path.join(self.sessions_dir, f"{session_id}.json")
 
+    def _safe_json_load(self, file_path: str) -> Optional[Dict]:
+        """
+        Safely load JSON data from a file.
+        """
+        try:
+            with open(file_path, "r") as f:
+                return json.load(f)
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to decode JSON from {file_path}: {str(e)}")
+            return None
+        except Exception as e:
+            logger.error(f"Error reading session file {file_path}: {str(e)}")
+            return None
+
+    def _safe_json_dump(self, data: Dict, file_path: str) -> bool:
+        """
+        Safely write JSON data to a file.
+        """
+        try:
+            with open(file_path, "w") as f:
+                json.dump(data, f)
+            return True
+        except Exception as e:
+            logger.error(f"Error writing session file {file_path}: {str(e)}")
+            return False
+
     def create_session(self) -> str:
         """
         Create a new session and return its ID.
@@ -33,8 +61,8 @@ class SessionService:
             "model_config": {}
         }
         
-        with open(self._get_session_path(session_id), "w") as f:
-            json.dump(session_data, f)
+        if not self._safe_json_dump(session_data, self._get_session_path(session_id)):
+            raise ValueError("Failed to create session file")
             
         return session_id
 
@@ -46,21 +74,27 @@ class SessionService:
         if not os.path.exists(session_path):
             return None
 
-        with open(session_path, "r") as f:
-            session_data = json.load(f)
-
-        # Check if session is expired
-        last_accessed = datetime.fromisoformat(session_data["last_accessed"])
-        if datetime.now() - last_accessed > self.session_timeout:
-            self.delete_session(session_id)
+        session_data = self._safe_json_load(session_path)
+        if not session_data:
             return None
 
-        # Update last accessed time
-        session_data["last_accessed"] = datetime.now().isoformat()
-        with open(session_path, "w") as f:
-            json.dump(session_data, f)
+        try:
+            # Check if session is expired
+            last_accessed = datetime.fromisoformat(session_data["last_accessed"])
+            if datetime.now() - last_accessed > self.session_timeout:
+                self.delete_session(session_id)
+                return None
 
-        return session_data
+            # Update last accessed time
+            session_data["last_accessed"] = datetime.now().isoformat()
+            if not self._safe_json_dump(session_data, session_path):
+                logger.error(f"Failed to update last accessed time for session {session_id}")
+                return None
+
+            return session_data
+        except (KeyError, ValueError) as e:
+            logger.error(f"Invalid session data format for {session_id}: {str(e)}")
+            return None
 
     def update_session(self, session_id: str, updates: Dict) -> Dict:
         """
@@ -73,8 +107,8 @@ class SessionService:
         session_data.update(updates)
         session_data["last_accessed"] = datetime.now().isoformat()
 
-        with open(self._get_session_path(session_id), "w") as f:
-            json.dump(session_data, f)
+        if not self._safe_json_dump(session_data, self._get_session_path(session_id)):
+            raise ValueError("Failed to update session file")
 
         return session_data
 
@@ -111,8 +145,12 @@ class SessionService:
         """
         session_path = self._get_session_path(session_id)
         if os.path.exists(session_path):
-            os.remove(session_path)
-            return True
+            try:
+                os.remove(session_path)
+                return True
+            except Exception as e:
+                logger.error(f"Error deleting session file {session_path}: {str(e)}")
+                return False
         return False
 
     def cleanup_expired_sessions(self):

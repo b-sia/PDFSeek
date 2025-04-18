@@ -191,3 +191,54 @@ http://localhost:8000/docs
 - Uses Chakra UI for modern, accessible components
 - State management with Zustand
 - Real-time updates with streaming responses
+
+## Running Tests
+
+### Backend Tests
+
+1. Make sure you have activated your virtual environment:
+```bash
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+2. Navigate to the backend directory:
+```bash
+cd backend
+```
+
+3. Run unit tests:
+```bash
+pytest tests/unit
+```
+
+4. Run integration tests:
+```bash
+pytest tests/integration
+```
+
+5. Run all tests with coverage report:
+```bash
+pytest --cov=app tests/
+```
+
+### Frontend Tests
+
+1. Navigate to the frontend directory:
+```bash
+cd frontend
+```
+
+2. Run unit tests:
+```bash
+npm test
+```
+
+3. Run tests in watch mode during development:
+```bash
+npm test -- --watch
+```
+
+4. Run tests with coverage:
+```bash
+npm test -- --coverage
+```

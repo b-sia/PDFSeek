@@ -70,12 +70,53 @@ export const uploadLocalModel = async (
   return response.data.model_path;
 };
 
+export const createSession = async (): Promise<string> => {
+  const response = await api.post('/api/session/create');
+  return response.data.session_id;
+};
+
+export const getSession = async (sessionId: string): Promise<any> => {
+  try {
+    const response = await api.get(`/api/session/${sessionId}`);
+    return response.data;
+  } catch (error) {
+    return null;
+  }
+};
+
+// Either get from localStorage or create a new one
+let cachedSessionId: string | null = null;
+
+export const getOrCreateSessionId = async (): Promise<string> => {
+  if (cachedSessionId) return cachedSessionId;
+  
+  const storedSessionId = localStorage.getItem('pdf_chat_session_id');
+  
+  if (storedSessionId) {
+    // Verify the session exists
+    const session = await getSession(storedSessionId);
+    if (session) {
+      cachedSessionId = storedSessionId;
+      return storedSessionId;
+    }
+  }
+  
+  // Create a new session
+  const newSessionId = await createSession();
+  localStorage.setItem('pdf_chat_session_id', newSessionId);
+  cachedSessionId = newSessionId;
+  return newSessionId;
+};
+
 export const streamChat = async (
   question: string,
   modelType: string,
   documentIds: string[],
   onChunk: (chunk: string) => void
 ): Promise<void> => {
+  // Get or create a session
+  const sessionId = await getOrCreateSessionId();
+  
   const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
     method: 'POST',
     headers: {
@@ -84,10 +125,15 @@ export const streamChat = async (
     body: JSON.stringify({
       question,
       model_type: modelType,
-      session_id: 'default', // TODO: Implement proper session management
+      session_id: sessionId,
       document_ids: documentIds,
     }),
   });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || 'Failed to process chat request');
+  }
 
   const reader = response.body?.getReader();
   if (!reader) throw new Error('Failed to get response reader');

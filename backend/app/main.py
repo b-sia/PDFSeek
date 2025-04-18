@@ -77,6 +77,17 @@ async def get_session_data(session_id: str):
     except Exception as e:
         raise error_service.handle_error(e, context="Failed to get session data")
 
+@app.post("/api/session/create")
+async def create_session():
+    """
+    Create a new session and return its ID.
+    """
+    try:
+        session_id = session_service.create_session()
+        return {"session_id": session_id}
+    except Exception as e:
+        raise error_service.handle_error(e, context="Failed to create session")
+
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",

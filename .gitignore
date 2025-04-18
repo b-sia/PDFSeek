@@ -40,3 +40,9 @@ backend/logs/
 
 #miscellaneous files
 misc/
+
+# coverage files
+.coverage
+
+# log files
+*.log

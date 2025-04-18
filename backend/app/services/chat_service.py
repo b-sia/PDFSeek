@@ -1,17 +1,20 @@
 import os
 import asyncio
 from typing import AsyncGenerator, Dict, List, Any, Optional
+import json
+from datetime import datetime
 
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_community.llms import LlamaCpp
-from langchain_openai import ChatOpenAI
+from langchain_community.llms import LlamaCpp, HuggingFacePipeline
+from langchain.chat_models import ChatOpenAI
+from langchain.schema import Document
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 from app.core.config import settings
 from app.models.chat import ChatRequest, ChatResponse
@@ -30,6 +33,11 @@ class ChatState(BaseModel):
     model_type: str = "openai"
     model_path: Optional[str] = None
     embedding_type: str = "openai"
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        if self.document_ids is None:
+            self.document_ids = []
 
 
 class ChatService:

@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     DEBUG: bool = os.getenv("DEBUG", "True").lower() == "true"
 
     # CORS Configuration
-    ALLOWED_ORIGINS: List[str] = os.getenv("ALLOWED_ORIGINS", ["http://localhost:5173"])
+    ALLOWED_ORIGINS: str = "http://localhost:5173"
 
     # Vector Store Configuration
     VECTOR_STORE_DIR: str = os.getenv("VECTOR_STORE_DIR", "./vector_store")
