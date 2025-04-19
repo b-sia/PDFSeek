@@ -1,3 +1,0 @@
-[server]
-maxUploadSize = 8192 # 8G
-fileWatcherType = "none" # disable watchdog filesystem watcher
