@@ -9,14 +9,14 @@ class ModelService:
     def __init__(self):
         self.model_dir = settings.MODEL_DIR
         self.current_config = {
-            "model_type": settings.DEFAULT_MODEL_TYPE,
-            "temperature": settings.DEFAULT_TEMPERATURE,
-            "max_tokens": settings.DEFAULT_MAX_TOKENS,
-            "top_p": settings.DEFAULT_TOP_P,
-            "repeat_penalty": settings.DEFAULT_REPEAT_PENALTY,
-            "n_ctx": settings.DEFAULT_N_CTX,
-            "gpu_layers": settings.DEFAULT_GPU_LAYERS,
-            "embedding_type": settings.DEFAULT_EMBEDDING_TYPE
+            "model_type": settings.MODEL_TYPE,
+            "temperature": settings.TEMPERATURE,
+            "max_tokens": settings.MAX_TOKENS,
+            "top_p": settings.TOP_P,
+            "repeat_penalty": settings.REPEAT_PENALTY,
+            "n_ctx": settings.N_CTX,
+            "gpu_layers": settings.GPU_LAYERS,
+            "embedding_type": settings.EMBEDDING_TYPE
         }
         self.supported_extensions = ['.gguf', '.safetensors', '.bin', '.pt', '.pth']
         

@@ -199,5 +199,5 @@ def get_vector_store(model_service=None) -> VectorStore:
     if vector_store is None:
         if model_service is None:
             raise ValueError("model_service must be provided when initializing vector_store")
-        vector_store = VectorStore(model_service, embedding_type=settings.DEFAULT_EMBEDDING_TYPE)
+        vector_store = VectorStore(model_service, embedding_type=settings.EMBEDDING_TYPE)
     return vector_store 

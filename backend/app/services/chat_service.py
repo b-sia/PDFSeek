@@ -80,8 +80,8 @@ class ChatService:
         if state.model_type == "openai":
             return ChatOpenAI(
                 model="gpt-3.5-turbo",
-                temperature=settings.DEFAULT_TEMPERATURE,
-                max_tokens=settings.DEFAULT_MAX_TOKENS,
+                temperature=settings.TEMPERATURE,
+                max_tokens=settings.MAX_TOKENS,
                 streaming=True
             )
         elif state.model_type == "local":
@@ -97,15 +97,15 @@ class ChatService:
             
             if model_type == "llama":
                 # Use LlamaCpp for GGUF models
-                print(f"Initializing LlamaCpp with GPU layers: {settings.DEFAULT_GPU_LAYERS}")
+                print(f"Initializing LlamaCpp with GPU layers: {settings.GPU_LAYERS}")
                 llm = LlamaCpp(
                     model_path=state.model_path,
-                    temperature=settings.DEFAULT_TEMPERATURE,
-                    max_tokens=settings.DEFAULT_MAX_TOKENS,
-                    top_p=settings.DEFAULT_TOP_P,
-                    repeat_penalty=settings.DEFAULT_REPEAT_PENALTY,
-                    n_ctx=settings.DEFAULT_N_CTX,
-                    n_gpu_layers=settings.DEFAULT_GPU_LAYERS,
+                    temperature=settings.TEMPERATURE,
+                    max_tokens=settings.MAX_TOKENS,
+                    top_p=settings.TOP_P,
+                    repeat_penalty=settings.REPEAT_PENALTY,
+                    n_ctx=settings.N_CTX,
+                    n_gpu_layers=settings.GPU_LAYERS,
                     streaming=True,
                     f16_kv=True,  # Enable half-precision for key/value cache
                     use_mlock=True,  # Lock model in memory
@@ -154,10 +154,10 @@ class ChatService:
                     "text-generation",
                     model=model,
                     tokenizer=tokenizer,
-                    max_length=settings.DEFAULT_MAX_TOKENS,
-                    temperature=settings.DEFAULT_TEMPERATURE,
-                    top_p=settings.DEFAULT_TOP_P,
-                    repetition_penalty=settings.DEFAULT_REPEAT_PENALTY,
+                    max_length=settings.MAX_TOKENS,
+                    temperature=settings.TEMPERATURE,
+                    top_p=settings.TOP_P,
+                    repetition_penalty=settings.REPEAT_PENALTY,
                     device=device,  # Explicitly set device
                 )
                 
