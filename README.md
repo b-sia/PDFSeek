@@ -2,6 +2,8 @@
 
 A modern web application for chatting with PDF documents using various LLM models. The application is built with a React frontend and FastAPI backend.
 
+![RAG Bot](assets/ragbot.jpg)
+
 ## Features
 
 - Upload and process multiple PDF documents
@@ -52,9 +54,9 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-2. Install llama-cpp-python with appropriate GPU support:
+2. Select the llama-cpp-python that your hardware supports:
 
-Go to requirements.txt and uncomment the llama-cpp-python dependency that your hardware supports.
+Go to requirements.txt and uncomment the llama-cpp-python dependency.
 
 For CPU-only usage:
 ```bash
