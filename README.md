@@ -54,26 +54,28 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 2. Install llama-cpp-python with appropriate GPU support:
 
+Go to requirements.txt and uncomment the llama-cpp-python dependency that your hardware supports.
+
 For CPU-only usage:
 ```bash
-pip install llama-cpp-python
+llama-cpp-python
 ```
 
 For CUDA GPU support (recommended for faster inference):
 ```bash
 # Make sure you have CUDA toolkit installed
-CMAKE_ARGS="-DGGML_CUDA=on" pip install llama-cpp-python
+CMAKE_ARGS="-DGGML_CUDA=on" llama-cpp-python
 ```
 
 For Metal GPU support (Apple Silicon):
 ```bash
-CMAKE_ARGS="-DGGML_METAL=on" pip install llama-cpp-python
+CMAKE_ARGS="-DGGML_METAL=on" llama-cpp-python
 ```
 
-3. Install remaining dependencies:
+3. Install the dependencies:
 ```bash
 cd backend
-pip install -r requirements.txt
+pip install -r requirements.txt --no-cache-dir
 ```
 
 4. Set up environment variables:
