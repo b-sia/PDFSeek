@@ -180,14 +180,15 @@ http://localhost:8000/docs
 
 ### Backend Development
 
-- The backend uses FastAPI for high performance and automatic API documentation
+- The backend uses FastAPI
 - Core LLM logic is separated into services
 - PDF processing is handled asynchronously
-- Model configuration is managed through environment variables
+- Model configuration can managed through environment variables. Set up a .env file to manage model configuration.
+Alternatively, just use the default values in the Settings class.
 
 ### Frontend Development
 
-- Built with React and TypeScript for type safety
+- Built with React and TypeScript
 - Uses Chakra UI for modern, accessible components
 - State management with Zustand
 - Real-time updates with streaming responses
